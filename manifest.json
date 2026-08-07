@@ -1,13 +1,13 @@
 {
-  "name": "Ronda Pet — Checklist do Gerente",
+  "name": "Ronda Pet",
   "short_name": "Ronda Pet",
-  "description": "Ferramenta pessoal para rondas diárias em loja de produtos pet.",
+  "description": "Checklist diário de rondas para loja pet",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F6F5F2",
-  "theme_color": "#2F6F5E",
+  "background_color": "#EFEFED",
+  "theme_color": "#F2F2F0",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

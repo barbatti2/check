@@ -1,18 +1,20 @@
-const CACHE = "ronda-pet-v1";
+const CACHE_NAME = "ronda-pet-v1";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./css/style.css",
   "./js/app.js",
-  "./js/firebase.js",
-  "./js/seed-data.js",
-  "./js/export.js",
-  "./manifest.json"
+  "./js/db.js",
+  "./js/config-firebase.js",
+  "./js/data-default.js",
+  "./manifest.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL)).catch(() => {})
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).catch(() => {})
   );
   self.skipWaiting();
 });
@@ -20,19 +22,30 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-// Cache-first para o app shell, network-first (sem cache) para tudo que é Firebase/API.
 self.addEventListener("fetch", (event) => {
-  const url = event.request.url;
-  if (url.includes("firestore") || url.includes("googleapis") || url.includes("gstatic") || url.includes("sheetjs") || url.includes("cdn")) {
-    return; // deixa passar direto para a rede
-  }
+  const url = new URL(event.request.url);
+
+  // Never intercept cross-origin requests (Firestore, CDN scripts, fonts, etc.)
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).catch(() => cached))
+    caches.match(event.request).then((cached) => {
+      const network = fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => cached);
+      return cached || network;
+    })
   );
 });

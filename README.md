@@ -1,63 +1,63 @@
-# Ronda Pet — PWA de rondas diárias
+# Ronda Pet — PWA de Rondas Diárias
 
-App pessoal para o gerente fazer a ronda dos 13 setores da loja pet antes do checklist oficial, com pontuação, pendências e histórico. Dados ficam no **Firebase Firestore**.
+App pessoal (HTML + CSS + JS puro) para conduzir a ronda diária de checklist
+antes do checklist oficial da loja.
 
-## 1. Criar o projeto Firebase (5 min)
+## Como usar agora (sem nenhuma configuração)
 
-1. Acesse https://console.firebase.google.com → **Adicionar projeto**.
-2. Dentro do projeto, vá em **Compilação → Firestore Database → Criar banco de dados** (modo produção, escolha a região mais próxima).
-3. Em **Configurações do projeto → Geral → Seus apps**, clique no ícone `</>` para criar um app Web e copie o objeto `firebaseConfig`.
-4. Abra `js/firebase.js` neste projeto e substitua os valores de `firebaseConfig` pelos seus.
+Basta abrir `index.html` num navegador (ou hospedar os arquivos em qualquer
+servidor estático / GitHub Pages / Netlify). Sem configurar o Firebase, o
+app funciona 100% localmente neste dispositivo, salvando tudo em
+`localStorage` — nada quebra, nada trava.
 
-## 2. Regras do Firestore (uso pessoal)
+Para instalar como app (PWA): abra pelo Chrome/Safari no celular → menu →
+"Adicionar à tela de início".
 
-Como é um app de uso pessoal sem login, em **Firestore → Regras**, use (ajuste depois se quiser adicionar autenticação):
+## Conectar ao Firestore (opcional, recomendado para uso contínuo)
+
+1. Crie um projeto em https://console.firebase.google.com
+2. Ative **Firestore Database**.
+3. Em *Configurações do projeto → Seus apps → Web*, copie as chaves.
+4. Abra `js/config-firebase.js`, cole suas chaves em `firebaseConfig` e
+   troque `FIREBASE_ENABLED` para `true`.
+5. Nas regras do Firestore (uso pessoal, um único dispositivo):
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /{document=**} {
+         allow read, write: if true;
+       }
+     }
+   }
+   ```
+   Ajuste conforme sua necessidade de segurança se for expor publicamente.
+
+Com o Firestore ativado, a tela **Configurações → Conexão** mostra o status
+em tempo real.
+
+## Estrutura
 
 ```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true; // uso pessoal — restrinja se for publicar a URL
-    }
-  }
-}
+index.html
+manifest.json          → metadados do PWA
+sw.js                   → cache do app-shell (funciona offline)
+css/style.css           → design system completo
+js/config-firebase.js   → suas chaves do Firebase
+js/data-default.js      → setores e perguntas padrão (editáveis no app)
+js/db.js                → camada de dados (Firestore + fallback local)
+js/app.js               → toda a lógica da interface
+icons/                  → ícones do PWA
 ```
 
-> Recomendado: se for hospedar publicamente, ative **Firebase Authentication** (login anônimo, por exemplo) e troque a regra para `if request.auth != null`.
+## Funcionalidades
 
-## 3. Publicar como PWA instalável
-
-O app é 100% estático (HTML/CSS/JS), então qualquer hospedagem estática funciona. A mais simples é o próprio Firebase Hosting:
-
-```bash
-npm install -g firebase-tools
-firebase login
-firebase init hosting     # aponte o "public directory" para esta pasta
-firebase deploy
-```
-
-Alternativas: Netlify, Vercel ou GitHub Pages (basta arrastar a pasta ou conectar o repositório).
-
-Depois de publicado com **HTTPS**, abra o link no celular (Chrome/Safari) → menu → **"Adicionar à tela inicial"** para instalar como app.
-
-## 4. Primeira execução
-
-Ao abrir pela primeira vez, o app cria automaticamente os 13 setores padrão no Firestore (com 4 perguntas genéricas cada). Personalize tudo em **Configurações**: adicionar/remover setores e perguntas.
-
-## Estrutura de dados (Firestore)
-
-- `setores/{id}` → `{ nome, icone, ordem, perguntas: [{id, texto}] }`
-- `rondas/{id}` → `{ inicio, fim, status, setoresConcluidos[], pontuacao, conformes, naoConformes, pendenciasCount }`
-- `rondas/{id}/respostas/{id}` → `{ setorId, perguntaId, resposta, observacao }`
-- `pendencias/{id}` → `{ rondaId, setorId, descricao, responsavel, prazo, prioridade, status }`
-
-## Arquivos
-
-- `index.html` — shell do app
-- `css/style.css` — design system (Material 3 + Apple HIG + neumorphism leve)
-- `js/app.js` — lógica, telas e roteamento
-- `js/firebase.js` — configuração e conexão com Firestore
-- `js/seed-data.js` — setores/perguntas padrão
-- `js/export.js` — exportação para Excel (.xlsx)
-- `manifest.json`, `sw.js`, `icons/` — recursos de PWA instalável/offline
+- Tela inicial com **Iniciar Ronda**, histórico recente e atalho de Configurações
+- 13 setores em cartões, cada um marcado com ✓ ao ser concluído (não permite refazer sem querer)
+- Perguntas por setor, com resposta 😞/🙂, observação opcional e criação de pendência
+  (descrição, responsável, prazo, prioridade)
+- Barra de progresso da ronda e de cada setor
+- Resumo final com anel de pontuação, conformes/não conformes e lista de pendências
+- Exportação para Excel (.xlsx) com 3 abas: Resumo, Checklist detalhado e Pendências
+- Histórico completo com filtro por período
+- Configurações: ativar/desativar setores e cadastrar/remover perguntas de cada um

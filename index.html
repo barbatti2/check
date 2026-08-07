@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Ronda Pet</title>
+<meta name="description" content="Rondas diárias de checklist para loja pet" />
+<meta name="theme-color" content="#F2F2F0" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Ronda Pet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+<div id="app" class="app">
+
+  <!-- ===================== HOME ===================== -->
+  <section id="view-home" class="view view-home">
+    <header class="home-header">
+      <div class="home-header-text">
+        <p class="eyebrow">Ronda Pet</p>
+        <h1 id="home-greeting">Boa jornada</h1>
+        <p class="home-date" id="home-date"></p>
+      </div>
+      <button class="icon-btn" id="btn-open-config" aria-label="Configurações">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 13.5a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V19.5a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H4.5a2 2 0 110-4h.09A1.65 1.65 0 006.1 8.6a1.65 1.65 0 00-.33-1.82l-.06-.06A2 2 0 118.54 3.9l.06.06a1.65 1.65 0 001.82.33H10.5A1.65 1.65 0 0011.5 2.8V2.7a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.09c.23.62.79 1.05 1.51 1.05h.1a2 2 0 110 4h-.09a1.65 1.65 0 00-1.5 1.01z" stroke="currentColor" stroke-width="1.6"/></svg>
+      </button>
+    </header>
+
+    <button class="start-round-card" id="btn-start-round">
+      <div class="start-round-glow"></div>
+      <div class="start-round-content">
+        <span class="start-round-icon">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div>
+          <p class="start-round-title">Iniciar Ronda</p>
+          <p class="start-round-sub">Checklist diário por setor</p>
+        </div>
+      </div>
+      <svg class="start-round-arrow" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div id="active-round-banner" class="active-round-banner hidden">
+      <div>
+        <p class="active-round-label">Ronda em andamento</p>
+        <p class="active-round-progress" id="active-round-progress-text">0 de 0 setores</p>
+      </div>
+      <button class="btn-pill" id="btn-resume-round">Continuar</button>
+    </div>
+
+    <div class="section-block">
+      <div class="section-block-header">
+        <h2>Histórico</h2>
+        <button class="link-btn" id="btn-see-all-history">Ver tudo</button>
+      </div>
+      <div id="history-preview-list" class="history-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== HISTORY (FULL) ===================== -->
+  <section id="view-history" class="view view-history hidden">
+    <header class="sub-header">
+      <button class="icon-btn" id="btn-history-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>Histórico</h1>
+      <div style="width:40px"></div>
+    </header>
+
+    <div class="filter-bar">
+      <input type="date" id="filter-date-from" class="filter-input" />
+      <span class="filter-sep">até</span>
+      <input type="date" id="filter-date-to" class="filter-input" />
+      <button class="link-btn" id="btn-clear-filters">Limpar</button>
+    </div>
+
+    <div id="history-full-list" class="history-list"></div>
+    <p id="history-empty" class="empty-state hidden">Nenhuma ronda encontrada para este período.</p>
+  </section>
+
+  <!-- ===================== ROUND DETAIL (READ ONLY SUMMARY) ===================== -->
+  <section id="view-round-detail" class="view view-round-detail hidden">
+    <header class="sub-header">
+      <button class="icon-btn" id="btn-detail-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>Resumo da Ronda</h1>
+      <button class="icon-btn" id="btn-detail-export" aria-label="Exportar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </header>
+    <div id="round-detail-content"></div>
+  </section>
+
+  <!-- ===================== SECTORS (ROUND IN PROGRESS) ===================== -->
+  <section id="view-sectors" class="view view-sectors hidden">
+    <header class="sub-header">
+      <button class="icon-btn" id="btn-sectors-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>Ronda de Hoje</h1>
+      <div style="width:40px"></div>
+    </header>
+
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="round-progress-fill"></div></div>
+      <p class="progress-label" id="round-progress-label">0% concluído</p>
+    </div>
+
+    <div id="sectors-grid" class="sectors-grid"></div>
+
+    <button class="btn-primary btn-finish-round hidden" id="btn-finish-round">Finalizar Ronda</button>
+  </section>
+
+  <!-- ===================== QUESTIONS (SECTOR CHECKLIST) ===================== -->
+  <section id="view-questions" class="view view-questions hidden">
+    <header class="sub-header">
+      <button class="icon-btn" id="btn-questions-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1 id="questions-sector-title">Setor</h1>
+      <div style="width:40px"></div>
+    </header>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="sector-progress-fill"></div></div>
+      <p class="progress-label" id="sector-progress-label">0 de 0 respondidas</p>
+    </div>
+    <div id="questions-list" class="questions-list"></div>
+    <button class="btn-primary btn-finish-sector" id="btn-finish-sector">Concluir Setor</button>
+  </section>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <section id="view-settings" class="view view-settings hidden">
+    <header class="sub-header">
+      <button class="icon-btn" id="btn-settings-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>Configurações</h1>
+      <div style="width:40px"></div>
+    </header>
+
+    <div class="settings-tabs">
+      <button class="settings-tab active" data-tab="setores">Setores</button>
+      <button class="settings-tab" data-tab="conexao">Conexão</button>
+    </div>
+
+    <div id="settings-panel-setores" class="settings-panel">
+      <p class="settings-hint">Ative os setores que fazem parte da sua ronda e gerencie as perguntas de cada um.</p>
+      <div id="settings-sectors-list" class="settings-sectors-list"></div>
+    </div>
+
+    <div id="settings-panel-conexao" class="settings-panel hidden">
+      <p class="settings-hint">Status da conexão com o banco de dados (Firestore).</p>
+      <div class="connection-card" id="connection-status-card">
+        <span class="connection-dot"></span>
+        <span id="connection-status-text">Verificando...</span>
+      </div>
+      <p class="settings-fineprint">As credenciais do Firebase ficam em <code>js/config-firebase.js</code>. Sem elas configuradas, o app funciona apenas localmente neste dispositivo.</p>
+    </div>
+  </section>
+
+  <!-- ===================== SECTOR QUESTIONS EDITOR ===================== -->
+  <section id="view-sector-editor" class="view view-sector-editor hidden">
+    <header class="sub-header">
+      <button class="icon-btn" id="btn-editor-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1 id="editor-sector-title">Perguntas</h1>
+      <div style="width:40px"></div>
+    </header>
+    <div id="editor-questions-list" class="editor-questions-list"></div>
+    <div class="add-question-row">
+      <input type="text" id="new-question-input" class="text-input" placeholder="Nova pergunta do checklist..." />
+      <button class="btn-add" id="btn-add-question" aria-label="Adicionar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===================== SUMMARY (END OF ROUND) ===================== -->
+  <section id="view-summary" class="view view-summary hidden">
+    <div id="summary-content" class="summary-content"></div>
+  </section>
+
+</div>
+
+<!-- ===================== MODAL: PENDÊNCIA ===================== -->
+<div id="modal-pendencia" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2>Criar Pendência</h2>
+    <p class="modal-question-ref" id="pendencia-question-ref"></p>
+
+    <label class="field-label">Descrição</label>
+    <textarea id="pendencia-descricao" class="text-area" placeholder="Descreva o que precisa ser resolvido..."></textarea>
+
+    <label class="field-label">Responsável</label>
+    <input type="text" id="pendencia-responsavel" class="text-input" placeholder="Nome do responsável" />
+
+    <label class="field-label">Prazo</label>
+    <input type="date" id="pendencia-prazo" class="text-input" />
+
+    <label class="field-label">Prioridade</label>
+    <div class="priority-selector" id="pendencia-prioridade">
+      <button type="button" class="priority-opt" data-value="baixa">Baixa</button>
+      <button type="button" class="priority-opt" data-value="media">Média</button>
+      <button type="button" class="priority-opt" data-value="alta">Alta</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" id="btn-cancel-pendencia">Cancelar</button>
+      <button class="btn-primary" id="btn-save-pendencia">Salvar Pendência</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: OBSERVAÇÃO ===================== -->
+<div id="modal-observacao" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2>Observação</h2>
+    <p class="modal-question-ref" id="observacao-question-ref"></p>
+    <textarea id="observacao-texto" class="text-area" placeholder="Escreva uma observação opcional..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="btn-cancel-observacao">Cancelar</button>
+      <button class="btn-primary" id="btn-save-observacao">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CONFIRM DIALOG ===================== -->
+<div id="modal-confirm" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-small">
+    <h2 id="confirm-title">Confirmar</h2>
+    <p id="confirm-message" class="confirm-message"></p>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="btn-confirm-no">Cancelar</button>
+      <button class="btn-primary btn-danger" id="btn-confirm-yes">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/config-firebase.js"></script>
+<script type="module" src="js/data-default.js"></script>
+<script type="module" src="js/db.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
