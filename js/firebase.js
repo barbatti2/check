@@ -4,12 +4,13 @@
 // Console: https://console.firebase.google.com -> Configurações do projeto -> Seus apps -> SDK setup
 // ======================================================================
 export const firebaseConfig = {
-  apiKey: "COLE_AQUI_SUA_API_KEY",
-  authDomain: "SEU-PROJETO.firebaseapp.com",
-  projectId: "SEU-PROJETO",
-  storageBucket: "SEU-PROJETO.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxxxxxx"
+  const firebaseConfig = {
+  apiKey: "AIzaSyB1iyuDETyPVzzZDXgGF74jVmHIYF7XjVg",
+  authDomain: "check-6d34c.firebaseapp.com",
+  projectId: "check-6d34c",
+  storageBucket: "check-6d34c.firebasestorage.app",
+  messagingSenderId: "753078110849",
+  appId: "1:753078110849:web:cff7e9560eac5039169b80"
 };
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
