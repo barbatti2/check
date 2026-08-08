@@ -231,8 +231,8 @@ input,textarea{ font-family:inherit; }
   color: var(--accent); font-weight:600; margin:0 0 8px;
 }
 .home-title{
-  font-family: var(--font-serif); font-weight:600; font-style:italic;
-  font-size:36px; line-height:1.08; letter-spacing:-0.01em;
+  font-family: var(--font-serif); font-weight:700; font-style:normal;
+  font-size:36px; line-height:1.08; letter-spacing:-0.015em;
   color: var(--ink); margin: 0 0 10px;
 }
 .home-sub{ color:var(--ink-muted); margin:0; font-size:14.5px; max-width:280px; }
