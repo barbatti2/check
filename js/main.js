@@ -51,19 +51,11 @@ function showToast(msg, ms = 2400) {
   toastTimer = setTimeout(() => t.classList.remove("is-visible"), ms);
 }
 
-// Watchdog: se uma operação travar (ex.: rede instável), o overlay de
-// carregamento é liberado sozinho após 15s em vez de ficar girando
-// infinitamente até o usuário atualizar a página.
-let loadingWatchdog;
+// Loading usado apenas em ações de escrita rápidas (salvar, excluir, etc.),
+// que já respondem em instantes — sem watchdog, para não disparar um aviso
+// de "problema de conexão" que não reflete a realidade.
 function showLoading(v) {
   $("#loading-overlay").classList.toggle("hidden", !v);
-  clearTimeout(loadingWatchdog);
-  if (v) {
-    loadingWatchdog = setTimeout(() => {
-      $("#loading-overlay").classList.add("hidden");
-      showToast("Isso demorou mais que o esperado. Verifique sua conexão e tente novamente.", 3800);
-    }, 15000);
-  }
 }
 
 function fmtDateLabel(date) {
@@ -234,7 +226,6 @@ async function loadSectors() {
 
 async function startOrResumeRonda() {
   if (!requireDb()) return;
-  showLoading(true);
   try {
     await loadSectors();
     if (!state.sectors.some(s => (s.questions || []).length > 0)) {
@@ -260,8 +251,6 @@ async function startOrResumeRonda() {
   } catch (e) {
     console.error(e);
     showToast("Não foi possível iniciar a ronda.");
-  } finally {
-    showLoading(false);
   }
 }
 
@@ -617,15 +606,12 @@ async function loadHistory() {
   } else {
     ({ from, to } = rangeForPreset(state.historyRange));
   }
-  showLoading(true);
   try {
     state.historyItems = await store.getHistory(from, to);
     renderHistory();
   } catch (e) {
     console.error(e);
     showToast("Erro ao carregar histórico.");
-  } finally {
-    showLoading(false);
   }
 }
 
@@ -716,7 +702,6 @@ function editHistoryRondaFlow(ronda) {
 
 async function startEditHistoryRonda(ronda) {
   if (!requireDb()) return;
-  showLoading(true);
   try {
     await loadSectors();
     state.currentRonda = ronda;
@@ -727,8 +712,6 @@ async function startEditHistoryRonda(ronda) {
   } catch (e) {
     console.error(e);
     showToast("Não foi possível abrir o checklist.");
-  } finally {
-    showLoading(false);
   }
 }
 
@@ -839,13 +822,13 @@ async function toggleResolvePendencia(ronda, pendId) {
 ============================================================ */
 async function openSettings() {
   if (!requireDb()) { showScreen("screen-settings"); return; }
-  showLoading(true);
+  showScreen("screen-settings");
   try {
     await loadSectors();
     renderSettingsSectors();
-    showScreen("screen-settings");
-  } finally {
-    showLoading(false);
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao carregar setores.");
   }
 }
 
@@ -1006,14 +989,14 @@ function wireEvents() {
 
   $("#btn-start-ronda").addEventListener("click", startOrResumeRonda);
   $("#btn-resume-ronda").addEventListener("click", startOrResumeRonda);
-  $("#btn-history").addEventListener("click", async () => {
+  $("#btn-history").addEventListener("click", () => {
     state.historyRange = "all";
     $all(".filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.range === "all"));
     $("#filter-custom-dates").classList.add("hidden");
     $("#filter-date-from").value = "";
     $("#filter-date-to").value = "";
-    await loadHistory();
     showScreen("screen-history");
+    loadHistory();
   });
   $("#btn-settings").addEventListener("click", openSettings);
 
