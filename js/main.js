@@ -42,13 +42,22 @@ function showScreen(id) {
 }
 
 let toastTimer;
-function showToast(msg, ms = 2400) {
+function showToast(msg, ms = 2400, variant) {
   const t = $("#toast");
   t.textContent = msg;
   t.classList.toggle("toast--wrap", msg.length > 40);
+  t.classList.toggle("toast--error", variant === "error");
   t.classList.add("is-visible");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("is-visible"), ms);
+}
+
+function shakeElement(el) {
+  if (!el) return;
+  el.classList.remove("is-shaking");
+  void el.offsetWidth; // força reflow para poder reiniciar a animação
+  el.classList.add("is-shaking");
+  setTimeout(() => el.classList.remove("is-shaking"), 500);
 }
 
 // Loading usado apenas em ações de escrita rápidas (salvar, excluir, etc.),
@@ -224,33 +233,65 @@ async function loadSectors() {
   state.sectors = await store.getSectors();
 }
 
-async function startOrResumeRonda() {
+async function ensureSectorsLoaded() {
+  if (!state.sectors.length) await loadSectors();
+}
+
+// Botão "Iniciar ronda": só cria uma ronda nova. Se já existe uma ronda
+// hoje (em andamento ou finalizada), avisa com destaque em vez de abrir
+// silenciosamente — evita a sensação de botão "bugado".
+async function startNewRondaFlow() {
   if (!requireDb()) return;
   try {
-    await loadSectors();
+    await ensureSectorsLoaded();
     if (!state.sectors.some(s => (s.questions || []).length > 0)) {
       showToast("Cadastre perguntas nos setores em Configurações antes de iniciar.");
       return;
     }
 
-    // Apenas 1 ronda por dia: se já existe uma (em andamento ou concluída)
-    // reaproveita, permitindo continuar ou editar em vez de criar outra.
     const today = await store.getTodayRonda();
     if (today) {
       state.currentRonda = today;
-      state.editingCompletedRonda = today.status === "completed";
-      if (state.editingCompletedRonda) {
-        showToast("Ronda de hoje já concluída. Abrindo para edição.");
-      }
-    } else {
-      state.currentRonda = await store.createRonda(state.sectors);
-      state.editingCompletedRonda = false;
+      shakeElement($("#btn-start-ronda"));
+      showToast(
+        today.status === "completed"
+          ? "A ronda de hoje já foi finalizada. Arraste o card abaixo para editar."
+          : "Já existe uma ronda em andamento hoje. Arraste o card abaixo para continuar.",
+        3600,
+        "error"
+      );
+      return;
     }
+
+    state.currentRonda = await store.createRonda(state.sectors);
+    state.editingCompletedRonda = false;
     renderRondaSectors();
     showScreen("screen-ronda-sectors");
   } catch (e) {
     console.error(e);
     showToast("Não foi possível iniciar a ronda.");
+  }
+}
+
+// Botão do card "Ronda de hoje": continua ou reabre para edição a ronda
+// que já existe hoje.
+async function resumeTodayRonda() {
+  if (!requireDb()) return;
+  try {
+    await ensureSectorsLoaded();
+    const today = await store.getTodayRonda();
+    if (!today) {
+      showToast("Nenhuma ronda em andamento hoje.");
+      initHome();
+      return;
+    }
+    state.currentRonda = today;
+    state.editingCompletedRonda = today.status === "completed";
+    renderRondaSectors();
+    showScreen("screen-ronda-sectors");
+  } catch (e) {
+    console.error(e);
+    showToast("Não foi possível abrir a ronda.");
   }
 }
 
@@ -703,7 +744,7 @@ function editHistoryRondaFlow(ronda) {
 async function startEditHistoryRonda(ronda) {
   if (!requireDb()) return;
   try {
-    await loadSectors();
+    await ensureSectorsLoaded();
     state.currentRonda = ronda;
     state.editingCompletedRonda = true;
     state.editingFromHistory = true;
@@ -824,7 +865,7 @@ async function openSettings() {
   if (!requireDb()) { showScreen("screen-settings"); return; }
   showScreen("screen-settings");
   try {
-    await loadSectors();
+    await ensureSectorsLoaded();
     renderSettingsSectors();
   } catch (e) {
     console.error(e);
@@ -987,8 +1028,8 @@ function wireEvents() {
     });
   });
 
-  $("#btn-start-ronda").addEventListener("click", startOrResumeRonda);
-  $("#btn-resume-ronda").addEventListener("click", startOrResumeRonda);
+  $("#btn-start-ronda").addEventListener("click", startNewRondaFlow);
+  $("#btn-resume-ronda").addEventListener("click", resumeTodayRonda);
   $("#btn-history").addEventListener("click", () => {
     state.historyRange = "all";
     $all(".filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.range === "all"));
