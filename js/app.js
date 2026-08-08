@@ -9,6 +9,9 @@ const state = {
   activeRonda: null,       // ronda em andamento (objeto completo)
   currentSectorId: null,   // setor sendo respondido agora
   historyFilter: { from: "", to: "" },
+  periodMode: "dia",
+  drillFilter: { year: null, month: null },
+  pendenciasStatusFilter: "aberta",
   pendenciaTarget: null,   // { sectorId, questionId, questionText }
   observacaoTarget: null,  // { sectorId, questionId, questionText }
   selectedPriority: null,
@@ -21,6 +24,7 @@ const $all = (sel) => Array.from(document.querySelectorAll(sel));
 const views = {
   home: $("#view-home"),
   history: $("#view-history"),
+  pendencias: $("#view-pendencias"),
   roundDetail: $("#view-round-detail"),
   sectors: $("#view-sectors"),
   questions: $("#view-questions"),
@@ -105,10 +109,46 @@ function renderHome() {
     const total = activeSectorIds().length;
     const done = state.activeRonda.setoresConcluidos.length;
     $("#active-round-progress-text").textContent = `${done} de ${total} setores concluídos`;
+    $("#qa-start-label").innerHTML = "Continuar<br/>Ronda";
+    $("#qa-start-icon").innerHTML = `<svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>`;
   } else {
     banner.classList.add("hidden");
+    $("#qa-start-label").innerHTML = "Iniciar<br/>Ronda";
+    $("#qa-start-icon").innerHTML = `<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   }
+  renderHeroStats();
   renderHistoryPreview();
+}
+
+function renderHeroStats() {
+  const finished = state.rondas.filter((r) => r.status === "concluida");
+
+  // Média dos últimos 7 dias
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const recent = finished.filter((r) => new Date(r.dataInicio).getTime() >= weekAgo);
+  const avg = recent.length
+    ? Math.round(recent.reduce((sum, r) => sum + (r.stats?.pontuacao ?? 0), 0) / recent.length)
+    : null;
+  $("#hero-score-value").textContent = avg === null ? "—" : avg + "%";
+
+  // Rondas no mês corrente
+  const now = new Date();
+  const monthCount = finished.filter((r) => {
+    const d = new Date(r.dataInicio);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  $("#stat-month-count").textContent = monthCount;
+
+  // Pendências em aberto (todas as rondas)
+  const openPend = finished.reduce(
+    (sum, r) => sum + (r.pendencias || []).filter((p) => p.status !== "resolvida").length,
+    0
+  );
+  $("#stat-open-pend").textContent = openPend;
+
+  // Melhor pontuação já registrada
+  const best = finished.length ? Math.max(...finished.map((r) => r.stats?.pontuacao ?? 0)) : null;
+  $("#stat-best-score").textContent = best === null ? "—" : best + "%";
 }
 
 function activeSectorIds() {
@@ -148,16 +188,148 @@ function renderHistoryPreview() {
 }
 
 // =====================================================================
-// HISTORY (FULL + FILTERS)
+// HISTORY (FULL + FILTERS: Dia / Mês / Ano)
 // =====================================================================
+const MONTH_NAMES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+function groupItemHTML(label, count, avgScore) {
+  return `
+    <div class="history-item" data-group="1">
+      <div class="history-score ${scoreClass(avgScore)}">${avgScore}%</div>
+      <div class="history-info">
+        <p class="history-date">${label}</p>
+        <p class="history-meta">${count} ${count === 1 ? "ronda" : "rondas"} · média ${avgScore}%</p>
+      </div>
+      <svg class="history-chevron" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>`;
+}
+
+function avgOf(list) {
+  if (!list.length) return 0;
+  return Math.round(list.reduce((s, r) => s + (r.stats?.pontuacao ?? 0), 0) / list.length);
+}
+
+function switchPeriodTab(period, { resetDrill = true } = {}) {
+  state.periodMode = period;
+  if (resetDrill) state.drillFilter = { year: null, month: null };
+  $all("#period-tabs .settings-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === period));
+  $("#filter-bar-dia").classList.toggle("hidden", period !== "dia");
+  renderHistoryFull();
+}
+
+function renderBreadcrumb() {
+  const { year, month } = state.drillFilter;
+  const bc = $("#history-breadcrumb");
+  if (year == null && month == null) {
+    bc.classList.add("hidden");
+    bc.innerHTML = "";
+    return;
+  }
+  const parts = [];
+  if (year != null) parts.push(year);
+  if (month != null) parts.push(MONTH_NAMES[month]);
+  bc.classList.remove("hidden");
+  bc.innerHTML = `<span>${parts.join(" · ")}</span><button id="btn-clear-breadcrumb" aria-label="Limpar">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+  </button>`;
+  $("#btn-clear-breadcrumb").addEventListener("click", () => {
+    state.drillFilter = { year: null, month: null };
+    renderHistoryFull();
+  });
+}
+
+function openHistoryFull() {
+  $("#filter-date-from").value = "";
+  $("#filter-date-to").value = "";
+  state.historyFilter = { from: "", to: "" };
+  state.drillFilter = { year: null, month: null };
+  state.periodMode = "dia";
+  $all("#period-tabs .settings-tab").forEach((t) => t.classList.toggle("active", t.dataset.period === "dia"));
+  $("#filter-bar-dia").classList.remove("hidden");
+  renderHistoryFull();
+  showView("history");
+}
+
+function openSettings() {
+  renderSettingsSectors();
+  checkConnectionStatus();
+  showView("settings");
+}
+
 function renderHistoryFull() {
+  renderBreadcrumb();
+  const container = $("#history-full-list");
+  const empty = $("#history-empty");
+  const finished = state.rondas.filter((r) => r.status === "concluida");
+  const { year: dYear, month: dMonth } = state.drillFilter;
+
+  if (state.periodMode === "ano") {
+    const groups = new Map(); // year -> rondas[]
+    finished.forEach((r) => {
+      const y = new Date(r.dataInicio).getFullYear();
+      if (!groups.has(y)) groups.set(y, []);
+      groups.get(y).push(r);
+    });
+    const years = [...groups.keys()].sort((a, b) => b - a);
+    if (!years.length) { container.innerHTML = ""; empty.classList.remove("hidden"); return; }
+    empty.classList.add("hidden");
+    container.innerHTML = years
+      .map((y) => groupItemHTML(String(y), groups.get(y).length, avgOf(groups.get(y))))
+      .join("");
+    container.querySelectorAll(".history-item").forEach((el, i) => {
+      el.addEventListener("click", () => {
+        state.drillFilter = { year: years[i], month: null };
+        switchPeriodTab("mes", { resetDrill: false });
+      });
+    });
+    return;
+  }
+
+  if (state.periodMode === "mes") {
+    let base = finished;
+    if (dYear != null) base = base.filter((r) => new Date(r.dataInicio).getFullYear() === dYear);
+    const groups = new Map(); // "y-m" -> {year, month, rondas[]}
+    base.forEach((r) => {
+      const d = new Date(r.dataInicio);
+      const key = d.getFullYear() + "-" + d.getMonth();
+      if (!groups.has(key)) groups.set(key, { year: d.getFullYear(), month: d.getMonth(), rondas: [] });
+      groups.get(key).rondas.push(r);
+    });
+    const keys = [...groups.keys()].sort((a, b) => {
+      const [ay, am] = a.split("-").map(Number);
+      const [by, bm] = b.split("-").map(Number);
+      return by - ay || bm - am;
+    });
+    if (!keys.length) { container.innerHTML = ""; empty.classList.remove("hidden"); return; }
+    empty.classList.add("hidden");
+    container.innerHTML = keys
+      .map((k) => {
+        const g = groups.get(k);
+        const label = `${MONTH_NAMES[g.month]} ${g.year}`;
+        return groupItemHTML(label, g.rondas.length, avgOf(g.rondas));
+      })
+      .join("");
+    container.querySelectorAll(".history-item").forEach((el, i) => {
+      const g = groups.get(keys[i]);
+      el.addEventListener("click", () => {
+        state.drillFilter = { year: g.year, month: g.month };
+        switchPeriodTab("dia", { resetDrill: false });
+      });
+    });
+    return;
+  }
+
+  // periodMode === 'dia'
+  let list = finished;
+  if (dYear != null) list = list.filter((r) => new Date(r.dataInicio).getFullYear() === dYear);
+  if (dMonth != null) list = list.filter((r) => new Date(r.dataInicio).getMonth() === dMonth);
   const { from, to } = state.historyFilter;
-  let list = state.rondas.filter((r) => r.status === "concluida");
   if (from) list = list.filter((r) => r.dataInicio.slice(0, 10) >= from);
   if (to) list = list.filter((r) => r.dataInicio.slice(0, 10) <= to);
 
-  const container = $("#history-full-list");
-  const empty = $("#history-empty");
   if (!list.length) {
     container.innerHTML = "";
     empty.classList.remove("hidden");
@@ -238,6 +410,61 @@ function escapeHTML(str = "") {
 }
 
 // =====================================================================
+// PENDÊNCIAS (GLOBAL VIEW)
+// =====================================================================
+function collectAllPendencias() {
+  const items = [];
+  for (const r of state.rondas) {
+    (r.pendencias || []).forEach((p) => items.push({ ...p, rondaId: r.id }));
+  }
+  return items;
+}
+
+function pendenciaRowHTML(p, resolved) {
+  return `<div class="summary-pendencia-item">
+    <div class="p-top">
+      <p class="p-desc">${escapeHTML(p.descricao)}</p>
+      <span class="priority-chip ${p.prioridade}">${prioLabel(p.prioridade)}</span>
+    </div>
+    <p class="p-meta">${escapeHTML(p.responsavel || "Sem responsável")} · Prazo: ${p.prazo ? fmtDateShort(p.prazo) : "—"} · ${p.setorNome}</p>
+    <button class="pendencia-toggle" data-id="${p.id}" data-ronda-id="${p.rondaId}">${resolved ? "Reabrir" : "Marcar como resolvida"}</button>
+  </div>`;
+}
+
+function renderPendenciasView() {
+  const status = state.pendenciasStatusFilter;
+  const resolved = status === "resolvida";
+  let all = collectAllPendencias().filter((p) => (resolved ? p.status === "resolvida" : p.status !== "resolvida"));
+  all.sort((a, b) => (a.prazo || "9999-99-99").localeCompare(b.prazo || "9999-99-99"));
+
+  const container = $("#pendencias-list");
+  const empty = $("#pendencias-empty");
+  if (!all.length) {
+    container.innerHTML = "";
+    empty.classList.remove("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+  container.innerHTML = all.map((p) => pendenciaRowHTML(p, resolved)).join("");
+  container.querySelectorAll(".pendencia-toggle").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await togglePendenciaStatus(btn.dataset.rondaId, btn.dataset.id);
+      renderPendenciasView();
+      renderHeroStats();
+    });
+  });
+}
+
+async function togglePendenciaStatus(rondaId, pendId) {
+  const ronda = state.rondas.find((r) => r.id === rondaId);
+  if (!ronda) return;
+  const p = (ronda.pendencias || []).find((x) => x.id === pendId);
+  if (!p) return;
+  p.status = p.status === "resolvida" ? "aberta" : "resolvida";
+  await DB.updateRonda(rondaId, { pendencias: ronda.pendencias });
+}
+
+// =====================================================================
 // START / RESUME ROUND
 // =====================================================================
 async function startNewRound() {
@@ -286,12 +513,16 @@ function renderSectorsGrid() {
       const qCount = (state.config.questionsBySector[s.id] || []).length;
       return `
       <div class="sector-card ${done ? "done" : ""}" data-id="${s.id}">
-        ${done ? `<span class="done-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ""}
         <span class="sector-icon">${s.icone}</span>
-        <div>
+        <div class="sector-text">
           <p class="sector-name">${s.nome}</p>
           <p class="sector-count">${qCount} ${qCount === 1 ? "item" : "itens"}</p>
         </div>
+        ${
+          done
+            ? `<span class="done-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`
+            : `<svg class="row-chevron" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+        }
       </div>`;
     })
     .join("");
@@ -808,21 +1039,44 @@ function bindEvents() {
   });
   $("#btn-resume-round").addEventListener("click", resumeRound);
 
-  $("#btn-open-config").addEventListener("click", () => {
-    renderSettingsSectors();
-    checkConnectionStatus();
-    showView("settings");
+  // Hero quick actions
+  $("#qa-start").addEventListener("click", () => {
+    if (state.activeRonda) resumeRound();
+    else startNewRound();
   });
+  $("#qa-history").addEventListener("click", () => openHistoryFull());
+  $("#qa-settings").addEventListener("click", () => openSettings());
+  $("#qa-pendencias").addEventListener("click", () => {
+    state.pendenciasStatusFilter = "aberta";
+    $all("#view-pendencias .settings-tab").forEach((t) => t.classList.toggle("active", t.dataset.pstatus === "aberta"));
+    renderPendenciasView();
+    showView("pendencias");
+  });
+  $("#hero-expand-toggle").addEventListener("click", (e) => {
+    const extra = $("#hero-extra");
+    const btn = e.currentTarget;
+    extra.classList.toggle("hidden");
+    btn.classList.toggle("open");
+  });
+
+  $("#btn-open-config").addEventListener("click", () => openSettings());
   $("#btn-settings-back").addEventListener("click", () => showView("home"));
 
-  $("#btn-see-all-history").addEventListener("click", () => {
-    $("#filter-date-from").value = "";
-    $("#filter-date-to").value = "";
-    state.historyFilter = { from: "", to: "" };
-    renderHistoryFull();
-    showView("history");
+  $("#btn-pendencias-back").addEventListener("click", () => showView("home"));
+  $all("#view-pendencias .settings-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      $all("#view-pendencias .settings-tab").forEach((t) => t.classList.toggle("active", t === tab));
+      state.pendenciasStatusFilter = tab.dataset.pstatus;
+      renderPendenciasView();
+    });
   });
+
+  $("#btn-see-all-history").addEventListener("click", () => openHistoryFull());
   $("#btn-history-back").addEventListener("click", () => showView("home"));
+
+  $all("#period-tabs .settings-tab").forEach((tab) => {
+    tab.addEventListener("click", () => switchPeriodTab(tab.dataset.period));
+  });
   $("#filter-date-from").addEventListener("change", (e) => {
     state.historyFilter.from = e.target.value;
     renderHistoryFull();
