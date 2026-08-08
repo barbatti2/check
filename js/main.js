@@ -15,7 +15,9 @@ const state = {
   pendenciaCtx: null,      // { sectorId, questionId, questionText, editingId }
   selectedPriority: null,
   confirmAction: null,
-  deletePendingSectorId: null
+  deletePendingSectorId: null,
+  editingCompletedRonda: false,
+  historyRange: "all"
 };
 
 const saveTimers = {};
@@ -42,13 +44,25 @@ let toastTimer;
 function showToast(msg, ms = 2400) {
   const t = $("#toast");
   t.textContent = msg;
+  t.classList.toggle("toast--wrap", msg.length > 40);
   t.classList.add("is-visible");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("is-visible"), ms);
 }
 
+// Watchdog: se uma operação travar (ex.: rede instável), o overlay de
+// carregamento é liberado sozinho após 15s em vez de ficar girando
+// infinitamente até o usuário atualizar a página.
+let loadingWatchdog;
 function showLoading(v) {
   $("#loading-overlay").classList.toggle("hidden", !v);
+  clearTimeout(loadingWatchdog);
+  if (v) {
+    loadingWatchdog = setTimeout(() => {
+      $("#loading-overlay").classList.add("hidden");
+      showToast("Isso demorou mais que o esperado. Verifique sua conexão e tente novamente.", 3800);
+    }, 15000);
+  }
 }
 
 function fmtDateLabel(date) {
@@ -107,14 +121,26 @@ async function initHome() {
   const card = $("#home-resume-card");
   if (!isFirebaseConfigured) { card.classList.add("hidden"); return; }
   try {
-    const inProgress = await store.getInProgressRonda();
-    if (inProgress) {
-      state.currentRonda = inProgress;
-      $("#resume-sub-text").textContent = `Iniciada às ${fmtTime(inProgress.startedAt)}`;
+    const today = await store.getTodayRonda();
+    if (today && today.status === "in_progress") {
+      state.currentRonda = today;
+      card.querySelector(".resume-title").textContent = "Ronda em andamento";
+      $("#resume-icon-wrap").innerHTML = '<i data-lucide="play-circle"></i>';
+      $("#resume-sub-text").textContent = `Iniciada às ${fmtTime(today.startedAt)}`;
+      $("#btn-resume-ronda").textContent = "Continuar";
+      card.classList.remove("hidden");
+    } else if (today && today.status === "completed") {
+      state.currentRonda = today;
+      card.querySelector(".resume-title").textContent = "Ronda de hoje concluída";
+      $("#resume-icon-wrap").innerHTML = '<i data-lucide="check-circle-2"></i>';
+      $("#resume-sub-text").textContent = `Pontuação ${today.score ?? 0}% · toque para editar`;
+      $("#btn-resume-ronda").textContent = "Editar";
       card.classList.remove("hidden");
     } else {
+      state.currentRonda = null;
       card.classList.add("hidden");
     }
+    refreshIcons();
   } catch (e) {
     console.error(e);
   }
@@ -130,15 +156,22 @@ async function startOrResumeRonda() {
   try {
     await loadSectors();
     if (!state.sectors.some(s => (s.questions || []).length > 0)) {
-      showLoading(false);
       showToast("Cadastre perguntas nos setores em Configurações antes de iniciar.");
       return;
     }
-    if (state.currentRonda && state.currentRonda.status === "in_progress") {
-      // já existe em andamento — apenas continua
+
+    // Apenas 1 ronda por dia: se já existe uma (em andamento ou concluída)
+    // reaproveita, permitindo continuar ou editar em vez de criar outra.
+    const today = await store.getTodayRonda();
+    if (today) {
+      state.currentRonda = today;
+      state.editingCompletedRonda = today.status === "completed";
+      if (state.editingCompletedRonda) {
+        showToast("Ronda de hoje já concluída. Abrindo para edição.");
+      }
     } else {
-      const existing = await store.getInProgressRonda();
-      state.currentRonda = existing || await store.createRonda(state.sectors);
+      state.currentRonda = await store.createRonda(state.sectors);
+      state.editingCompletedRonda = false;
     }
     renderRondaSectors();
     showScreen("screen-ronda-sectors");
@@ -201,7 +234,7 @@ function renderRondaSectors() {
       </div>
       <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
     `;
-    if (!isDone && !isEmpty) {
+    if (!isEmpty && (!isDone || state.editingCompletedRonda)) {
       card.addEventListener("click", () => openSectorQuestions(sector.id));
     } else if (isDone) {
       card.addEventListener("click", () => showToast("Setor já finalizado nesta ronda."));
@@ -211,6 +244,7 @@ function renderRondaSectors() {
 
   const allDone = totals.sectorsWithContent > 0 && totals.sectorsDone === totals.sectorsWithContent;
   $("#ronda-finish-bar").classList.toggle("hidden", !allDone);
+  $("#btn-finish-ronda span").textContent = state.editingCompletedRonda ? "Salvar alterações" : "Ver resultado da ronda";
 
   refreshIcons();
 }
@@ -417,7 +451,7 @@ async function finishRondaFlow() {
   try {
     await store.finishRonda(state.currentRonda.id, {
       score, conformCount: totals.conform, nonConformCount: totals.nonConform
-    });
+    }, { isEdit: state.editingCompletedRonda });
     state.currentRonda.status = "completed";
     state.currentRonda.score = score;
     state.currentRonda.conformCount = totals.conform;
@@ -473,10 +507,34 @@ function renderSummary(ronda, opts = {}) {
 /* ============================================================
    HISTÓRICO
 ============================================================ */
+function toISODate(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function rangeForPreset(range) {
+  const now = new Date();
+  if (range === "7" || range === "30") {
+    const from = new Date(now);
+    from.setDate(from.getDate() - (Number(range) - 1));
+    return { from: toISODate(from), to: toISODate(now) };
+  }
+  if (range === "month") {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from: toISODate(from), to: toISODate(now) };
+  }
+  return { from: "", to: "" };
+}
+
 async function loadHistory() {
   if (!requireDb()) return;
-  const from = $("#filter-date-from").value;
-  const to = $("#filter-date-to").value;
+  const customVisible = !$("#filter-custom-dates").classList.contains("hidden");
+  let from, to;
+  if (customVisible) {
+    from = $("#filter-date-from").value;
+    to = $("#filter-date-to").value;
+  } else {
+    ({ from, to } = rangeForPreset(state.historyRange));
+  }
   showLoading(true);
   try {
     state.historyItems = await store.getHistory(from, to);
@@ -495,6 +553,29 @@ function scoreClass(score) {
   return "score-low";
 }
 
+function rondaSectorStats(ronda) {
+  const entries = Object.values(ronda.sectorsData || {}).filter(sd => sd.totalQuestions > 0);
+  const done = entries.filter(sd => sd.completed).length;
+  return { total: entries.length, done };
+}
+
+function rondaPendStats(ronda) {
+  const list = ronda.pendencias || [];
+  const resolved = list.filter(p => p.resolvida).length;
+  return { total: list.length, resolved };
+}
+
+function historyBadgesHtml(ronda) {
+  const sec = rondaSectorStats(ronda);
+  const pend = rondaPendStats(ronda);
+  const secOk = sec.total > 0 && sec.done === sec.total;
+  const pendOk = pend.total === 0 || pend.resolved === pend.total;
+  return `
+    <span class="hist-badge ${secOk ? "is-ok" : ""}"><i data-lucide="layers"></i>${sec.done}/${sec.total} setores</span>
+    <span class="hist-badge ${pendOk ? "is-ok" : "is-warn"}"><i data-lucide="${pend.total === 0 ? "check-circle-2" : "flag"}"></i>${pend.total === 0 ? "Sem pendências" : `${pend.resolved}/${pend.total} resolvidas`}</span>
+  `;
+}
+
 function renderHistory() {
   const list = $("#history-list");
   list.innerHTML = "";
@@ -503,12 +584,12 @@ function renderHistory() {
   state.historyItems.forEach(r => {
     const card = document.createElement("div");
     card.className = "history-card";
-    const pendCount = (r.pendencias || []).length;
     card.innerHTML = `
       <div class="history-score ${scoreClass(r.score || 0)}">${r.score ?? 0}%</div>
       <div class="history-body">
         <p class="history-date">${fmtDateShort(r.startedAt)}</p>
-        <p class="history-sub">${r.conformCount ?? 0} conformes · ${r.nonConformCount ?? 0} não conformes · ${pendCount} pendência${pendCount === 1 ? "" : "s"}</p>
+        <p class="history-sub">${r.conformCount ?? 0} conformes · ${r.nonConformCount ?? 0} não conformes</p>
+        <div class="history-badges">${historyBadgesHtml(r)}</div>
       </div>
     `;
     card.addEventListener("click", () => openHistoryDetail(r));
@@ -521,7 +602,7 @@ function openHistoryDetail(ronda) {
   $("#history-detail-title").textContent = fmtDateLabel(ronda.startedAt);
   const body = $("#history-detail-body");
   body.innerHTML = `
-    <div class="score-card" style="margin-bottom:18px;">
+    <div class="score-card" style="margin-bottom:14px;">
       <div class="score-ring-block">
         <svg class="progress-ring progress-ring--score" viewBox="0 0 120 120">
           <circle class="progress-ring-track" cx="60" cy="60" r="52"></circle>
@@ -535,17 +616,28 @@ function openHistoryDetail(ronda) {
         <div class="score-row"><i data-lucide="flag" class="ic-warn"></i><span>Pendências</span><b>${(ronda.pendencias || []).length}</b></div>
       </div>
     </div>
+    <div class="hist-status-row">${historyBadgesHtml(ronda)}</div>
+    <div class="section-header" style="padding:14px 2px 10px;"><h3>Pendências</h3></div>
     <div class="card-list" id="hist-pend-list"></div>
   `;
   const pendList = body.querySelector("#hist-pend-list");
-  (ronda.pendencias || []).forEach(p => {
+  const pendencias = ronda.pendencias || [];
+  if (!pendencias.length) {
+    pendList.innerHTML = `<div class="empty-state"><i data-lucide="check-circle-2"></i><p>Nenhuma pendência registrada.</p></div>`;
+  }
+  pendencias.forEach(p => {
     const card = document.createElement("div");
-    card.className = "pendencia-card";
+    card.className = "pendencia-card" + (p.resolvida ? " is-resolved" : "");
     card.innerHTML = `
       <div class="pendencia-head"><span class="pendencia-sector">${p.sectorName}</span>${priorityBadgeHtml(p.prioridade)}</div>
       <p class="pendencia-desc">${p.descricao}</p>
       <div class="pendencia-meta"><span><i data-lucide="user"></i>${p.responsavel || "—"}</span><span><i data-lucide="calendar"></i>${p.prazo || "sem prazo"}</span></div>
+      <button type="button" class="btn-resolve ${p.resolvida ? "is-resolved" : ""}" data-id="${p.id}">
+        <i data-lucide="${p.resolvida ? "check-circle-2" : "circle"}"></i>
+        <span>${p.resolvida ? "Resolvida" : "Marcar como resolvida"}</span>
+      </button>
     `;
+    card.querySelector(".btn-resolve").addEventListener("click", () => toggleResolvePendencia(ronda, p.id));
     pendList.appendChild(card);
   });
   refreshIcons();
@@ -553,6 +645,26 @@ function openHistoryDetail(ronda) {
 
   $("#btn-export-history-excel").onclick = () => exportRondaToExcel(ronda);
   $("#modal-history-detail").classList.remove("hidden");
+}
+
+async function toggleResolvePendencia(ronda, pendId) {
+  const pendencias = (ronda.pendencias || []).map(p =>
+    p.id === pendId ? { ...p, resolvida: !p.resolvida, resolvedAt: !p.resolvida ? Date.now() : null } : p
+  );
+  ronda.pendencias = pendencias;
+  showLoading(true);
+  try {
+    await store.saveRondaPendencias(ronda.id, pendencias);
+    const idx = state.historyItems.findIndex(r => r.id === ronda.id);
+    if (idx >= 0) state.historyItems[idx].pendencias = pendencias;
+    renderHistory();
+    openHistoryDetail(ronda);
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao atualizar pendência.");
+  } finally {
+    showLoading(false);
+  }
 }
 
 /* ============================================================
@@ -711,12 +823,19 @@ function deleteSectorFlow() {
 ============================================================ */
 function wireEvents() {
   $all("[data-nav]").forEach(btn => {
-    btn.addEventListener("click", () => showScreen(btn.dataset.nav));
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.nav;
+      showScreen(target);
+      if (target === "screen-home") { state.editingCompletedRonda = false; initHome(); }
+    });
   });
 
   $("#btn-start-ronda").addEventListener("click", startOrResumeRonda);
   $("#btn-resume-ronda").addEventListener("click", startOrResumeRonda);
   $("#btn-history").addEventListener("click", async () => {
+    state.historyRange = "all";
+    $all(".filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.range === "all"));
+    $("#filter-custom-dates").classList.add("hidden");
     $("#filter-date-from").value = "";
     $("#filter-date-to").value = "";
     await loadHistory();
@@ -728,6 +847,7 @@ function wireEvents() {
   $("#btn-finish-ronda").addEventListener("click", finishRondaFlow);
   $("#btn-finish-summary").addEventListener("click", () => {
     state.currentRonda = null;
+    state.editingCompletedRonda = false;
     initHome();
     showScreen("screen-home");
   });
@@ -763,6 +883,21 @@ function wireEvents() {
   });
 
   // histórico
+  $all(".filter-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const range = chip.dataset.range;
+      $all(".filter-chip").forEach(c => c.classList.toggle("is-selected", c === chip));
+      if (range === "custom") {
+        $("#filter-custom-dates").classList.toggle("hidden");
+        return;
+      }
+      $("#filter-custom-dates").classList.add("hidden");
+      $("#filter-date-from").value = "";
+      $("#filter-date-to").value = "";
+      state.historyRange = range;
+      loadHistory();
+    });
+  });
   $("#filter-date-from").addEventListener("change", loadHistory);
   $("#filter-date-to").addEventListener("change", loadHistory);
   $("#btn-clear-filter").addEventListener("click", () => {
