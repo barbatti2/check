@@ -598,6 +598,10 @@ function renderSectorsGrid() {
 
 function updateRoundProgress() {
   const ronda = state.activeRonda;
+  const total = activeSectorIds().length;
+  const done = ronda.setoresConcluidos.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  $("#round-progress-fill").style.width = pct + "%";
   $("#round-progress-label").textContent = `${pct}% concluído · ${done} de ${total} setores`;
 
   const finishBtn = $("#btn-finish-round");
