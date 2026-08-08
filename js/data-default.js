@@ -2,19 +2,19 @@
 // tudo depois em Configurações).
 
 export const DEFAULT_SECTORS = [
-  { id: "promocoes_trade", nome: "Promoções e Trade", icone: "🏷️", ativo: true },
-  { id: "processos_gerais", nome: "Processos Gerais", icone: "📋", ativo: true },
-  { id: "caes_petfood", nome: "Cães Pet Food", icone: "🍖", ativo: true },
-  { id: "caes_snacks", nome: "Cães Snacks", icone: "🦴", ativo: true },
-  { id: "gatos_petfood", nome: "Gatos Pet Food", icone: "🐟", ativo: true },
-  { id: "gatos_snacks", nome: "Gatos Snacks", icone: "🐾", ativo: true },
-  { id: "farmacia", nome: "Farmácia", icone: "💊", ativo: true },
-  { id: "higiene_beleza", nome: "Higiene e Beleza", icone: "🧴", ativo: true },
-  { id: "acessorios", nome: "Acessórios", icone: "🎾", ativo: true },
-  { id: "camas", nome: "Camas", icone: "🛏️", ativo: true },
-  { id: "tapetes_higienicos", nome: "Tapetes Higiênicos", icone: "🧻", ativo: true },
-  { id: "granulados", nome: "Granulados", icone: "🪨", ativo: true },
-  { id: "aves_roedores_peixes", nome: "Aves, Roedores e Peixes", icone: "🐦", ativo: true },
+  { id: "promocoes_trade", nome: "Promoções e Trade", icone: "tag", ativo: true },
+  { id: "processos_gerais", nome: "Processos Gerais", icone: "clipboard-list", ativo: true },
+  { id: "caes_petfood", nome: "Cães Pet Food", icone: "dog", ativo: true },
+  { id: "caes_snacks", nome: "Cães Snacks", icone: "bone", ativo: true },
+  { id: "gatos_petfood", nome: "Gatos Pet Food", icone: "cat", ativo: true },
+  { id: "gatos_snacks", nome: "Gatos Snacks", icone: "fish", ativo: true },
+  { id: "farmacia", nome: "Farmácia", icone: "pill", ativo: true },
+  { id: "higiene_beleza", nome: "Higiene e Beleza", icone: "sparkles", ativo: true },
+  { id: "acessorios", nome: "Acessórios", icone: "shopping-bag", ativo: true },
+  { id: "camas", nome: "Camas", icone: "bed", ativo: true },
+  { id: "tapetes_higienicos", nome: "Tapetes Higiênicos", icone: "layers", ativo: true },
+  { id: "granulados", nome: "Granulados", icone: "mountain", ativo: true },
+  { id: "aves_roedores_peixes", nome: "Aves, Roedores e Peixes", icone: "bird", ativo: true },
 ];
 
 export const DEFAULT_QUESTIONS = {

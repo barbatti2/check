@@ -33,10 +33,27 @@ const views = {
   summary: $("#view-summary"),
 };
 
+const NAV_TAB_VIEWS = new Set(["home", "history", "pendencias", "settings"]);
+
 function showView(name) {
   Object.values(views).forEach((v) => v.classList.add("hidden"));
   views[name].classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+  updateBottomNav(name);
+}
+
+function updateBottomNav(name) {
+  const nav = $("#bottom-nav");
+  if (NAV_TAB_VIEWS.has(name)) {
+    nav.classList.remove("hidden");
+    $all(".bn-item").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+  } else {
+    nav.classList.add("hidden");
+  }
+}
+
+function refreshIcons() {
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function toast(msg) {
@@ -89,6 +106,7 @@ async function init() {
   renderHome();
   bindEvents();
   registerServiceWorker();
+  refreshIcons();
 }
 
 function renderGreeting() {
@@ -109,33 +127,53 @@ function renderHome() {
     const total = activeSectorIds().length;
     const done = state.activeRonda.setoresConcluidos.length;
     $("#active-round-progress-text").textContent = `${done} de ${total} setores concluídos`;
+    $("#active-round-progress-fill").style.width = (total ? Math.round((done / total) * 100) : 0) + "%";
     $("#qa-start-label").innerHTML = "Continuar<br/>Ronda";
-    $("#qa-start-icon").innerHTML = `<svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>`;
+    $("#qa-start-icon").innerHTML = `<i data-lucide="play"></i>`;
   } else {
     banner.classList.add("hidden");
     $("#qa-start-label").innerHTML = "Iniciar<br/>Ronda";
-    $("#qa-start-icon").innerHTML = `<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    $("#qa-start-icon").innerHTML = `<i data-lucide="check"></i>`;
   }
   renderHeroStats();
   renderHistoryPreview();
+  refreshIcons();
 }
 
 function renderHeroStats() {
   const finished = state.rondas.filter((r) => r.status === "concluida");
 
-  // Média dos últimos 7 dias
-  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const recent = finished.filter((r) => new Date(r.dataInicio).getTime() >= weekAgo);
-  const avg = recent.length
-    ? Math.round(recent.reduce((sum, r) => sum + (r.stats?.pontuacao ?? 0), 0) / recent.length)
+  // Média dos últimos 7 dias, comparada aos 7 dias anteriores
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const currentWindow = finished.filter((r) => now - new Date(r.dataInicio).getTime() <= 7 * day);
+  const previousWindow = finished.filter((r) => {
+    const age = now - new Date(r.dataInicio).getTime();
+    return age > 7 * day && age <= 14 * day;
+  });
+  const avg = currentWindow.length
+    ? Math.round(currentWindow.reduce((sum, r) => sum + (r.stats?.pontuacao ?? 0), 0) / currentWindow.length)
+    : null;
+  const avgPrev = previousWindow.length
+    ? Math.round(previousWindow.reduce((sum, r) => sum + (r.stats?.pontuacao ?? 0), 0) / previousWindow.length)
     : null;
   $("#hero-score-value").textContent = avg === null ? "—" : avg + "%";
 
+  const trendEl = $("#hero-trend");
+  if (avg !== null && avgPrev !== null) {
+    const delta = avg - avgPrev;
+    trendEl.classList.remove("hidden", "down");
+    if (delta < 0) trendEl.classList.add("down");
+    trendEl.innerHTML = `<i data-lucide="${delta >= 0 ? "trending-up" : "trending-down"}"></i>${delta >= 0 ? "+" : ""}${delta}%`;
+  } else {
+    trendEl.classList.add("hidden");
+  }
+
   // Rondas no mês corrente
-  const now = new Date();
+  const nowDate = new Date();
   const monthCount = finished.filter((r) => {
     const d = new Date(r.dataInicio);
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    return d.getFullYear() === nowDate.getFullYear() && d.getMonth() === nowDate.getMonth();
   }).length;
   $("#stat-month-count").textContent = monthCount;
 
@@ -145,6 +183,14 @@ function renderHeroStats() {
     0
   );
   $("#stat-open-pend").textContent = openPend;
+
+  const badge = $("#bn-pend-badge");
+  if (openPend > 0) {
+    badge.textContent = openPend > 9 ? "9+" : String(openPend);
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
 
   // Melhor pontuação já registrada
   const best = finished.length ? Math.max(...finished.map((r) => r.stats?.pontuacao ?? 0)) : null;
@@ -369,10 +415,10 @@ async function openRoundDetail(id) {
     const sector = state.config.sectors.find((s) => s.id === sectorId);
     const respostas = ronda.respostas?.[sectorId] || [];
     html += `<div class="detail-sector-block">
-      <div class="detail-sector-header"><h3>${sector ? sector.icone + " " + sector.nome : sectorId}</h3></div>`;
+      <div class="detail-sector-header"><h3><i data-lucide="${sector ? sector.icone : "circle"}"></i>${sector ? sector.nome : sectorId}</h3></div>`;
     for (const r of respostas) {
       html += `<div class="detail-answer-row">
-        <span class="a-emoji">${r.status === "ok" ? "🙂" : "😞"}</span>
+        <span class="a-emoji"><i data-lucide="${r.status === "ok" ? "smile" : "frown"}"></i></span>
         <div><p class="a-text">${escapeHTML(r.texto)}</p>${r.observacao ? `<p class="a-obs">"${escapeHTML(r.observacao)}"</p>` : ""}</div>
       </div>`;
     }
@@ -389,6 +435,7 @@ async function openRoundDetail(id) {
   html += `</div><div style="height:20px"></div>`;
   $("#round-detail-content").innerHTML = html;
   showView("roundDetail");
+  refreshIcons();
 }
 
 function pendenciaItemHTML(p) {
@@ -429,6 +476,13 @@ function pendenciaRowHTML(p, resolved) {
     <p class="p-meta">${escapeHTML(p.responsavel || "Sem responsável")} · Prazo: ${p.prazo ? fmtDateShort(p.prazo) : "—"} · ${p.setorNome}</p>
     <button class="pendencia-toggle" data-id="${p.id}" data-ronda-id="${p.rondaId}">${resolved ? "Reabrir" : "Marcar como resolvida"}</button>
   </div>`;
+}
+
+function openPendenciasFromEntry() {
+  state.pendenciasStatusFilter = "aberta";
+  $all("#view-pendencias .settings-tab").forEach((t) => t.classList.toggle("active", t.dataset.pstatus === "aberta"));
+  renderPendenciasView();
+  showView("pendencias");
 }
 
 function renderPendenciasView() {
@@ -513,7 +567,7 @@ function renderSectorsGrid() {
       const qCount = (state.config.questionsBySector[s.id] || []).length;
       return `
       <div class="sector-card ${done ? "done" : ""}" data-id="${s.id}">
-        <span class="sector-icon">${s.icone}</span>
+        <span class="sector-icon"><i data-lucide="${s.icone}"></i></span>
         <div class="sector-text">
           <p class="sector-name">${s.nome}</p>
           <p class="sector-count">${qCount} ${qCount === 1 ? "item" : "itens"}</p>
@@ -539,14 +593,11 @@ function renderSectorsGrid() {
   });
 
   updateRoundProgress();
+  refreshIcons();
 }
 
 function updateRoundProgress() {
   const ronda = state.activeRonda;
-  const total = activeSectorIds().length;
-  const done = ronda.setoresConcluidos.length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
-  $("#round-progress-fill").style.width = pct + "%";
   $("#round-progress-label").textContent = `${pct}% concluído · ${done} de ${total} setores`;
 
   const finishBtn = $("#btn-finish-round");
@@ -590,10 +641,10 @@ function renderQuestionsList() {
         <p class="question-text">${escapeHTML(r.texto)}</p>
         <div class="answer-row">
           <button class="answer-btn bad ${r.status === "bad" ? "selected bad" : ""}" data-idx="${idx}" data-val="bad">
-            <span class="emoji">😞</span><span>Não atingiu</span>
+            <span class="emoji"><i data-lucide="frown"></i></span><span>Não atingiu</span>
           </button>
           <button class="answer-btn ok ${r.status === "ok" ? "selected ok" : ""}" data-idx="${idx}" data-val="ok">
-            <span class="emoji">🙂</span><span>Atingiu</span>
+            <span class="emoji"><i data-lucide="smile"></i></span><span>Atingiu</span>
           </button>
         </div>
         <div class="question-actions">
@@ -628,6 +679,7 @@ function renderQuestionsList() {
   });
 
   updateSectorProgress();
+  refreshIcons();
 }
 
 function updateSectorProgress() {
@@ -923,7 +975,7 @@ function renderSettingsSectors() {
     .map(
       (s) => `
     <div class="settings-sector-row" data-id="${s.id}">
-      <span class="sector-icon-sm">${s.icone}</span>
+      <span class="sector-icon-sm"><i data-lucide="${s.icone}"></i></span>
       <div style="flex:1;min-width:0;">
         <p class="row-name">${s.nome}</p>
         <p class="row-count">${(state.config.questionsBySector[s.id] || []).length} perguntas</p>
@@ -947,6 +999,7 @@ function renderSettingsSectors() {
   list.querySelectorAll(".row-edit").forEach((btn) => {
     btn.addEventListener("click", () => openSectorEditor(btn.dataset.id));
   });
+  refreshIcons();
 }
 
 // =====================================================================
@@ -1033,12 +1086,6 @@ function registerServiceWorker() {
 // EVENT BINDINGS
 // =====================================================================
 function bindEvents() {
-  $("#btn-start-round").addEventListener("click", () => {
-    if (state.activeRonda) resumeRound();
-    else startNewRound();
-  });
-  $("#btn-resume-round").addEventListener("click", resumeRound);
-
   // Hero quick actions
   $("#qa-start").addEventListener("click", () => {
     if (state.activeRonda) resumeRound();
@@ -1046,18 +1093,14 @@ function bindEvents() {
   });
   $("#qa-history").addEventListener("click", () => openHistoryFull());
   $("#qa-settings").addEventListener("click", () => openSettings());
-  $("#qa-pendencias").addEventListener("click", () => {
-    state.pendenciasStatusFilter = "aberta";
-    $all("#view-pendencias .settings-tab").forEach((t) => t.classList.toggle("active", t.dataset.pstatus === "aberta"));
-    renderPendenciasView();
-    showView("pendencias");
-  });
+  $("#qa-pendencias").addEventListener("click", () => openPendenciasFromEntry());
   $("#hero-expand-toggle").addEventListener("click", (e) => {
     const extra = $("#hero-extra");
     const btn = e.currentTarget;
     extra.classList.toggle("hidden");
     btn.classList.toggle("open");
   });
+  $("#active-round-banner").addEventListener("click", () => resumeRound());
 
   $("#btn-open-config").addEventListener("click", () => openSettings());
   $("#btn-settings-back").addEventListener("click", () => showView("home"));
@@ -1073,6 +1116,16 @@ function bindEvents() {
 
   $("#btn-see-all-history").addEventListener("click", () => openHistoryFull());
   $("#btn-history-back").addEventListener("click", () => showView("home"));
+
+  // Bottom navigation (FAB style)
+  $("#bn-home").addEventListener("click", () => { renderHome(); showView("home"); });
+  $("#bn-history").addEventListener("click", () => openHistoryFull());
+  $("#bn-pendencias").addEventListener("click", () => openPendenciasFromEntry());
+  $("#bn-settings").addEventListener("click", () => openSettings());
+  $("#bn-fab").addEventListener("click", () => {
+    if (state.activeRonda) resumeRound();
+    else startNewRound();
+  });
 
   $all("#period-tabs .settings-tab").forEach((tab) => {
     tab.addEventListener("click", () => switchPeriodTab(tab.dataset.period));
