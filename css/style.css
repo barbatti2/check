@@ -1,11 +1,14 @@
 /* ============================================================
    RONDA — design tokens
    Palette: Blueberry (azul profundo) + Cream Soda — dupla azul/creme
-   boutique pet/retail, trocada como par bg/text entre modo claro e escuro.
+   boutique pet/retail. Tema sempre claro — não segue o modo escuro
+   do sistema, para manter a identidade visual consistente.
    Type: Fraunces (display, soft-serif) + Plus Jakarta Sans (body)
    + IBM Plex Mono (data)
 ============================================================ */
 :root{
+  color-scheme: light;
+
   --bg: #F1F1EE;
   --surface: #FFFFFF;
   --surface-2: #F7F7F4;
@@ -54,33 +57,6 @@
   --app-max: 480px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg: #131412;
-    --surface: #1C1D19;
-    --surface-2: #202119;
-    --surface-sunken: #17180F;
-    --ink: #F2F1EA;
-    --ink-muted: #A5A69C;
-    --ink-faint: #6E6F66;
-    --line: #2C2D26;
-    --line-soft: #26261F;
-    --accent: #FFF0C9;          /* Cream Soda pops on dark surfaces */
-    --accent-strong: #FFE6A6;
-    --accent-contrast: #243B8F; /* Blueberry text/icons on cream */
-    --accent-soft: #393420;
-    --accent-soft-2: #2B2717;
-    --accent-shadow: rgba(255,240,201,0.2);
-    --ok: #6FA88E;
-    --ok-soft: #223028;
-    --bad: #D98A7C;
-    --bad-soft: #33231F;
-    --warn: #D9B872;
-    --warn-soft: #332C1B;
-    --shadow-inset: inset 0 1px 2px rgba(0,0,0,0.3), inset 0 -1px 1px rgba(255,255,255,0.03);
-  }
 }
 
 *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
@@ -259,8 +235,9 @@ input,textarea{ font-family:inherit; }
 .resume-info svg{ width:26px; height:26px; color: var(--accent); }
 .resume-title{ margin:0; font-weight:600; font-size:14px; }
 .resume-sub{ margin:2px 0 0; font-size:12.5px; color:var(--ink-muted); }
-.resume-card{ cursor:pointer; transition: transform var(--dur-fast) var(--ease); }
+.resume-card{ cursor:pointer; transition: transform var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease); }
 .resume-card:active{ transform: scale(.985); }
+.resume-card.is-loading{ opacity:.55; pointer-events:none; }
 
 /* ---------------- Progress ring ---------------- */
 .progress-wrap{
