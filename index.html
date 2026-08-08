@@ -14,7 +14,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
 
 <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -51,7 +51,7 @@
 
     <div id="home-resume-card" class="resume-card hidden">
       <div class="resume-info">
-        <i data-lucide="play-circle"></i>
+        <span id="resume-icon-wrap"><i data-lucide="play-circle"></i></span>
         <div>
           <p class="resume-title">Ronda em andamento</p>
           <p class="resume-sub" id="resume-sub-text">Continue de onde parou</p>
@@ -187,7 +187,14 @@
   </header>
 
   <section class="section-block">
-    <div class="filter-row">
+    <div class="filter-chips" id="history-filter-chips">
+      <button type="button" class="filter-chip is-selected" data-range="all">Tudo</button>
+      <button type="button" class="filter-chip" data-range="7">7 dias</button>
+      <button type="button" class="filter-chip" data-range="30">30 dias</button>
+      <button type="button" class="filter-chip" data-range="month">Este mês</button>
+      <button type="button" class="filter-chip" data-range="custom"><i data-lucide="calendar-range"></i></button>
+    </div>
+    <div class="filter-custom hidden" id="filter-custom-dates">
       <label class="field-inline">
         <span>De</span>
         <input type="date" id="filter-date-from" />
