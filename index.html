@@ -25,7 +25,7 @@
     <div class="hero-card" id="hero-card">
       <div class="hero-top">
         <div class="hero-brand">
-          <span class="hero-logo">🐾</span>
+          <span class="hero-logo"><i data-lucide="paw-print"></i></span>
           <span class="hero-wordmark">Ronda Pet</span>
         </div>
         <div class="hero-actions-top">
@@ -38,37 +38,41 @@
       <p class="hero-greeting" id="home-greeting">Bom dia</p>
       <p class="hero-date" id="home-date"></p>
 
-      <div class="hero-score-row">
-        <div>
+      <div class="hero-main-row">
+        <div class="hero-score-block">
           <p class="hero-score-label">Pontuação média <span>· 7 dias</span></p>
-          <p class="hero-score-value" id="hero-score-value">—</p>
+          <div class="hero-score-line">
+            <span class="hero-score-value" id="hero-score-value">—</span>
+            <span class="hero-trend hidden" id="hero-trend"></span>
+          </div>
         </div>
-        <button class="hero-fab" id="btn-start-round" aria-label="Iniciar ronda">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-        </button>
+        <div class="hero-illustration">
+          <div class="hero-illustration-ring"><i data-lucide="dog"></i></div>
+          <span class="hero-illustration-badge"><i data-lucide="paw-print"></i></span>
+        </div>
       </div>
 
       <div class="hero-quick-actions">
         <button class="hero-quick-btn" id="qa-start">
-          <span class="qa-circle" id="qa-start-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="qa-circle" id="qa-start-icon"><i data-lucide="check"></i></span>
           <span class="qa-label" id="qa-start-label">Iniciar<br/>Ronda</span>
         </button>
         <button class="hero-quick-btn" id="qa-history">
-          <span class="qa-circle"><svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3.5 2M12 21a9 9 0 100-18 9 9 0 000 18z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="qa-circle"><i data-lucide="history"></i></span>
           <span class="qa-label">Histórico</span>
         </button>
         <button class="hero-quick-btn" id="qa-pendencias">
-          <span class="qa-circle"><svg viewBox="0 0 24 24" fill="none"><path d="M12 8v5m0 3h.01M10.3 3.86L1.82 18a1.5 1.5 0 001.3 2.25h17.76a1.5 1.5 0 001.3-2.25L14.7 3.86a1.5 1.5 0 00-2.6 0z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>
+          <span class="qa-circle"><i data-lucide="triangle-alert"></i></span>
           <span class="qa-label">Pendências</span>
         </button>
         <button class="hero-quick-btn" id="qa-settings">
-          <span class="qa-circle"><svg viewBox="0 0 24 24" fill="none"><path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 13.5a1.65 1.65 0 00.33 1.82 2 2 0 11-2.83 2.83 1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51 2 2 0 11-4 0 1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33 2 2 0 11-2.83-2.83 1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1 2 2 0 110-4 1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82 2 2 0 112.83-2.83 1.65 1.65 0 001.82.33 1.65 1.65 0 001-1.51 2 2 0 114 0 1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33 2 2 0 112.83 2.83 1.65 1.65 0 00-.33 1.82c.23.62.79 1.05 1.51 1.05a2 2 0 110 4 1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.6"/></svg></span>
+          <span class="qa-circle"><i data-lucide="settings"></i></span>
           <span class="qa-label">Config</span>
         </button>
       </div>
 
       <button class="hero-expand-toggle" id="hero-expand-toggle" aria-label="Ver mais">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <i data-lucide="chevron-down"></i>
       </button>
 
       <div class="hero-extra hidden" id="hero-extra">
@@ -78,17 +82,19 @@
       </div>
     </div>
 
-    <div id="active-round-banner" class="active-round-banner hidden">
-      <div>
-        <p class="active-round-label">Ronda em andamento</p>
-        <p class="active-round-progress" id="active-round-progress-text">0 de 0 setores</p>
+    <button id="active-round-banner" class="active-round-banner hidden">
+      <span class="arb-icon"><i data-lucide="paw-print"></i></span>
+      <div class="arb-text">
+        <p class="arb-title">Ronda em andamento</p>
+        <p class="arb-sub" id="active-round-progress-text">0 de 0 setores concluídos</p>
+        <div class="arb-progress-track"><div class="arb-progress-fill" id="active-round-progress-fill"></div></div>
       </div>
-      <button class="btn-pill" id="btn-resume-round">Continuar</button>
-    </div>
+      <i data-lucide="chevron-right" class="arb-chevron"></i>
+    </button>
 
     <div class="section-block">
       <div class="section-block-header">
-        <h2>Histórico</h2>
+        <h2>Atividades recentes</h2>
         <button class="link-btn" id="btn-see-all-history">Ver tudo</button>
       </div>
       <div id="history-preview-list" class="history-list"></div>
@@ -247,6 +253,26 @@
 
 </div>
 
+<!-- ===================== BOTTOM NAVIGATION (FAB) ===================== -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bn-item active" data-tab="home" id="bn-home">
+    <i data-lucide="house"></i><span>Início</span>
+  </button>
+  <button class="bn-item" data-tab="history" id="bn-history">
+    <i data-lucide="history"></i><span>Histórico</span>
+  </button>
+  <button class="bn-fab" id="bn-fab" aria-label="Ronda">
+    <i data-lucide="paw-print"></i>
+  </button>
+  <button class="bn-item" data-tab="pendencias" id="bn-pendencias">
+    <i data-lucide="triangle-alert"></i><span>Pendências</span>
+    <span class="bn-badge hidden" id="bn-pend-badge"></span>
+  </button>
+  <button class="bn-item" data-tab="settings" id="bn-settings">
+    <i data-lucide="settings"></i><span>Config.</span>
+  </button>
+</nav>
+
 <!-- ===================== MODAL: PENDÊNCIA ===================== -->
 <div id="modal-pendencia" class="modal-overlay hidden">
   <div class="modal-sheet">
@@ -303,6 +329,7 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script type="module" src="js/config-firebase.js"></script>
 <script type="module" src="js/data-default.js"></script>
 <script type="module" src="js/db.js"></script>
