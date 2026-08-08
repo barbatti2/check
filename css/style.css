@@ -194,6 +194,14 @@ input,textarea{ font-family:inherit; }
   box-shadow: var(--shadow-sm);
 }
 
+.btn.is-shaking{ animation: shakeError 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shakeError{
+  10%,90%{ transform: translateX(-1px); }
+  20%,80%{ transform: translateX(2px); }
+  30%,50%,70%{ transform: translateX(-5px); }
+  40%,60%{ transform: translateX(5px); }
+}
+
 .btn-ghost{
   background: var(--surface);
   color: var(--ink);
@@ -606,6 +614,7 @@ input,textarea{ font-family:inherit; }
   opacity:0; pointer-events:none; transition: opacity var(--dur-mid) var(--ease), transform var(--dur-mid) var(--ease); z-index:80; max-width: calc(100% - 40px); text-align:center;
 }
 .toast.toast--wrap{ white-space: normal; border-radius: var(--radius-lg); }
+.toast.toast--error{ background: #D6392C; color:#fff; }
 .toast.is-visible{ opacity:1; transform: translateX(-50%) translateY(0); }
 
 /* ---------------- Loading overlay ---------------- */
