@@ -18,7 +18,9 @@ const state = {
   deletePendingSectorId: null,
   editingCompletedRonda: false,
   editingFromHistory: false,
-  historyRange: "all"
+  historyRange: "all",
+  editSnapshot: null,   // "foto" do checklist ao entrar em modo edição, para detectar alterações
+  isDirty: false
 };
 
 const saveTimers = {};
@@ -45,7 +47,6 @@ let toastTimer;
 function showToast(msg, ms = 2400, variant) {
   const t = $("#toast");
   t.textContent = msg;
-  t.classList.toggle("toast--wrap", msg.length > 40);
   t.classList.toggle("toast--error", variant === "error");
   t.classList.add("is-visible");
   clearTimeout(toastTimer);
@@ -94,6 +95,20 @@ function debounce(key, fn, wait = 500) {
   saveTimers[key] = setTimeout(fn, wait);
 }
 
+// "Foto" do conteúdo relevante do checklist (respostas + pendências),
+// usada para saber se algo mudou durante uma edição.
+function snapshotRondaState(ronda) {
+  return JSON.stringify({ sectorsData: ronda.sectorsData, pendencias: ronda.pendencias || [] });
+}
+
+function markDirtyCheck() {
+  if (!state.editingCompletedRonda || !state.editSnapshot || !state.currentRonda) {
+    state.isDirty = false;
+    return;
+  }
+  state.isDirty = snapshotRondaState(state.currentRonda) !== state.editSnapshot;
+}
+
 function requireDb() {
   if (!isFirebaseConfigured) {
     showToast("Configure o Firebase em js/firebase-init.js");
@@ -119,85 +134,6 @@ function closeConfirm() {
 }
 
 /* ============================================================
-   Swipe actions (arrastar card para revelar ações)
-============================================================ */
-let openSwipeEl = null;
-const swipeRegistry = new Map();
-
-function closeAllSwipes(except) {
-  if (openSwipeEl && openSwipeEl !== except) {
-    const fn = swipeRegistry.get(openSwipeEl);
-    if (fn) fn();
-  }
-}
-
-function attachSwipe(wrapEl, contentEl, actionsWidth) {
-  let startX = 0, startY = 0, baseX = 0, dragging = false, decided = null, suppressClick = false;
-
-  const setX = (x, animate) => {
-    contentEl.style.transition = animate ? "" : "none";
-    contentEl.style.transform = `translateX(${x}px)`;
-  };
-  const openIt = () => {
-    closeAllSwipes(contentEl);
-    setX(-actionsWidth, true);
-    contentEl.classList.add("is-open");
-    openSwipeEl = contentEl;
-  };
-  const closeIt = () => {
-    setX(0, true);
-    contentEl.classList.remove("is-open");
-    if (openSwipeEl === contentEl) openSwipeEl = null;
-  };
-  swipeRegistry.set(contentEl, closeIt);
-
-  contentEl.addEventListener("pointerdown", (e) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    startX = e.clientX; startY = e.clientY; dragging = true; decided = null;
-    baseX = contentEl.classList.contains("is-open") ? -actionsWidth : 0;
-  });
-  contentEl.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    if (decided === null) {
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-      decided = Math.abs(dx) > Math.abs(dy) ? "x" : "n";
-      if (decided === "x") { try { contentEl.setPointerCapture(e.pointerId); } catch (_) {} }
-      else { dragging = false; return; }
-    }
-    e.preventDefault();
-    let next = baseX + dx;
-    next = Math.min(0, Math.max(-actionsWidth, next));
-    setX(next, false);
-  });
-  const finish = (e) => {
-    if (!dragging) return;
-    dragging = false;
-    if (decided === "x") {
-      suppressClick = true;
-      setTimeout(() => { suppressClick = false; }, 60);
-      const dx = e.clientX - startX;
-      const finalX = baseX + dx;
-      if (finalX < -actionsWidth / 2) openIt(); else closeIt();
-    }
-    decided = null;
-  };
-  contentEl.addEventListener("pointerup", finish);
-  contentEl.addEventListener("pointercancel", finish);
-
-  contentEl.addEventListener("click", (e) => {
-    if (suppressClick || contentEl.classList.contains("is-open")) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      if (contentEl.classList.contains("is-open") && !suppressClick) closeIt();
-    }
-  }, true);
-
-  return { close: closeIt };
-}
-
-/* ============================================================
    HOME
 ============================================================ */
 async function initHome() {
@@ -210,14 +146,12 @@ async function initHome() {
       card.querySelector(".resume-title").textContent = "Ronda em andamento";
       $("#resume-icon-wrap").innerHTML = '<i data-lucide="play-circle"></i>';
       $("#resume-sub-text").textContent = `Iniciada às ${fmtTime(today.startedAt)}`;
-      $("#btn-resume-ronda").textContent = "Continuar";
       card.classList.remove("hidden");
     } else if (today && today.status === "completed") {
       state.currentRonda = today;
       card.querySelector(".resume-title").textContent = "Ronda de hoje concluída";
       $("#resume-icon-wrap").innerHTML = '<i data-lucide="check-circle-2"></i>';
       $("#resume-sub-text").textContent = `Pontuação ${today.score ?? 0}% · toque para editar`;
-      $("#btn-resume-ronda").textContent = "Editar";
       card.classList.remove("hidden");
     } else {
       state.currentRonda = null;
@@ -255,8 +189,8 @@ async function startNewRondaFlow() {
       shakeElement($("#btn-start-ronda"));
       showToast(
         today.status === "completed"
-          ? "A ronda de hoje já foi finalizada. Arraste o card abaixo para editar."
-          : "Já existe uma ronda em andamento hoje. Arraste o card abaixo para continuar.",
+          ? "A ronda de hoje já foi finalizada. Toque no card abaixo para editar."
+          : "Já existe uma ronda em andamento hoje. Toque no card abaixo para continuar.",
         3600,
         "error"
       );
@@ -287,6 +221,8 @@ async function resumeTodayRonda() {
     }
     state.currentRonda = today;
     state.editingCompletedRonda = today.status === "completed";
+    state.editSnapshot = state.editingCompletedRonda ? snapshotRondaState(today) : null;
+    state.isDirty = false;
     renderRondaSectors();
     showScreen("screen-ronda-sectors");
   } catch (e) {
@@ -354,8 +290,11 @@ function renderRondaSectors() {
     list.appendChild(card);
   });
 
+  markDirtyCheck();
+
   const allDone = totals.sectorsWithContent > 0 && totals.sectorsDone === totals.sectorsWithContent;
-  $("#ronda-finish-bar").classList.toggle("hidden", !allDone);
+  const showFinishBar = state.editingCompletedRonda ? (allDone && state.isDirty) : allDone;
+  $("#ronda-finish-bar").classList.toggle("hidden", !showFinishBar);
   $("#btn-finish-ronda span").textContent = state.editingCompletedRonda ? "Salvar alterações" : "Ver resultado da ronda";
 
   refreshIcons();
@@ -569,6 +508,8 @@ async function finishRondaFlow() {
     state.currentRonda.conformCount = totals.conform;
     state.currentRonda.nonConformCount = totals.nonConform;
     state.currentRonda.finishedAt = new Date();
+    state.editSnapshot = snapshotRondaState(state.currentRonda);
+    state.isDirty = false;
     renderSummary(state.currentRonda, { back: "screen-home" });
     showScreen("screen-summary");
   } catch (e) {
@@ -691,42 +632,19 @@ function renderHistory() {
   $("#history-empty").classList.toggle("hidden", state.historyItems.length > 0);
 
   state.historyItems.forEach(r => {
-    const wrap = document.createElement("div");
-    wrap.className = "swipe-wrap";
-    wrap.innerHTML = `
-      <div class="swipe-actions">
-        <button type="button" class="swipe-action swipe-action--edit" data-action="edit">
-          <i data-lucide="pencil"></i><span>Editar</span>
-        </button>
-        <button type="button" class="swipe-action swipe-action--delete" data-action="delete">
-          <i data-lucide="trash-2"></i><span>Excluir</span>
-        </button>
+    const card = document.createElement("div");
+    card.className = "history-card";
+    card.innerHTML = `
+      <div class="history-score ${scoreClass(r.score || 0)}">${r.score ?? 0}%</div>
+      <div class="history-body">
+        <p class="history-date">${fmtDateShort(r.startedAt)}</p>
+        <p class="history-sub">${r.conformCount ?? 0} conformes · ${r.nonConformCount ?? 0} não conformes</p>
+        <div class="history-badges">${historyBadgesHtml(r)}</div>
       </div>
-      <div class="swipe-content history-card">
-        <div class="history-score ${scoreClass(r.score || 0)}">${r.score ?? 0}%</div>
-        <div class="history-body">
-          <p class="history-date">${fmtDateShort(r.startedAt)}</p>
-          <p class="history-sub">${r.conformCount ?? 0} conformes · ${r.nonConformCount ?? 0} não conformes</p>
-          <div class="history-badges">${historyBadgesHtml(r)}</div>
-        </div>
-        <div class="swipe-hint-icon"><i data-lucide="chevrons-left"></i></div>
-      </div>
+      <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
     `;
-    const content = wrap.querySelector(".swipe-content");
-    attachSwipe(wrap, content, 144);
-
-    content.addEventListener("click", () => openHistoryDetail(r));
-    wrap.querySelector('[data-action="edit"]').addEventListener("click", (e) => {
-      e.stopPropagation();
-      closeAllSwipes();
-      editHistoryRondaFlow(r);
-    });
-    wrap.querySelector('[data-action="delete"]').addEventListener("click", (e) => {
-      e.stopPropagation();
-      closeAllSwipes();
-      deleteHistoryRondaFlow(r);
-    });
-    list.appendChild(wrap);
+    card.addEventListener("click", () => openHistoryDetail(r));
+    list.appendChild(card);
   });
   refreshIcons();
 }
@@ -748,6 +666,8 @@ async function startEditHistoryRonda(ronda) {
     state.currentRonda = ronda;
     state.editingCompletedRonda = true;
     state.editingFromHistory = true;
+    state.editSnapshot = snapshotRondaState(ronda);
+    state.isDirty = false;
     renderRondaSectors();
     showScreen("screen-ronda-sectors");
   } catch (e) {
@@ -835,6 +755,14 @@ function openHistoryDetail(ronda) {
   setTimeout(() => setRing($("#hist-score-ring"), ronda.score ?? 0), 30);
 
   $("#btn-export-history-excel").onclick = () => exportRondaToExcel(ronda);
+  $("#btn-edit-history").onclick = () => {
+    $("#modal-history-detail").classList.add("hidden");
+    editHistoryRondaFlow(ronda);
+  };
+  $("#btn-delete-history").onclick = () => {
+    $("#modal-history-detail").classList.add("hidden");
+    deleteHistoryRondaFlow(ronda);
+  };
   $("#modal-history-detail").classList.remove("hidden");
 }
 
@@ -1018,10 +946,18 @@ function wireEvents() {
       let target = btn.dataset.nav;
       if (target === "screen-home" && state.editingFromHistory) target = "screen-history";
       showScreen(target);
-      if (target === "screen-home") { state.editingCompletedRonda = false; initHome(); }
+      if (target === "screen-ronda-sectors" && state.currentRonda) renderRondaSectors();
+      if (target === "screen-home") {
+        state.editingCompletedRonda = false;
+        state.editSnapshot = null;
+        state.isDirty = false;
+        initHome();
+      }
       if (target === "screen-history") {
         state.editingCompletedRonda = false;
         state.editingFromHistory = false;
+        state.editSnapshot = null;
+        state.isDirty = false;
         state.currentRonda = null;
         loadHistory();
       }
@@ -1029,7 +965,7 @@ function wireEvents() {
   });
 
   $("#btn-start-ronda").addEventListener("click", startNewRondaFlow);
-  $("#btn-resume-ronda").addEventListener("click", resumeTodayRonda);
+  $("#home-resume-card").addEventListener("click", resumeTodayRonda);
   $("#btn-history").addEventListener("click", () => {
     state.historyRange = "all";
     $all(".filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.range === "all"));
@@ -1048,6 +984,8 @@ function wireEvents() {
     state.currentRonda = null;
     state.editingCompletedRonda = false;
     state.editingFromHistory = false;
+    state.editSnapshot = null;
+    state.isDirty = false;
     if (returnToHistory) {
       loadHistory();
       showScreen("screen-history");
@@ -1116,9 +1054,6 @@ function wireEvents() {
   $("#input-new-sector").addEventListener("keydown", e => { if (e.key === "Enter") addSectorFlow(); });
   $("#btn-add-question").addEventListener("click", addQuestionFlow);
   $("#btn-delete-sector").addEventListener("click", deleteSectorFlow);
-
-  // swipe do card de retomada na home
-  attachSwipe($("#home-resume-card"), $("#home-resume-card .resume-card"), 116);
 }
 
 /* ============================================================
