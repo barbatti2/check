@@ -208,12 +208,20 @@ async function startNewRondaFlow() {
 }
 
 // Botão do card "Ronda de hoje": continua ou reabre para edição a ronda
-// que já existe hoje.
+// que já existe hoje. Reaproveita o que a Home já carregou (evita uma
+// nova ida ao Firestore) e trava contra toques repetidos, que antes
+// deixavam o card parecendo travado/lento.
+let resumeInFlight = false;
 async function resumeTodayRonda() {
   if (!requireDb()) return;
+  if (resumeInFlight) return;
+  resumeInFlight = true;
+  const card = $("#home-resume-card");
+  card.classList.add("is-loading");
   try {
     await ensureSectorsLoaded();
-    const today = await store.getTodayRonda();
+    let today = state.currentRonda;
+    if (!today) today = await store.getTodayRonda();
     if (!today) {
       showToast("Nenhuma ronda em andamento hoje.");
       initHome();
@@ -228,6 +236,9 @@ async function resumeTodayRonda() {
   } catch (e) {
     console.error(e);
     showToast("Não foi possível abrir a ronda.");
+  } finally {
+    resumeInFlight = false;
+    card.classList.remove("is-loading");
   }
 }
 
