@@ -88,16 +88,13 @@ export async function deleteQuestion(sectorId, questionId) {
 /* ---------------------------- RONDAS ---------------------------- */
 
 export async function getInProgressRonda() {
-  const q = query(
-    collection(db, "rondas"),
-    where("status", "==", "in_progress"),
-    orderBy("startedAt", "desc"),
-    limit(1)
-  );
+  // Filtro simples (sem orderBy) para não exigir índice composto no Firestore.
+  const q = query(collection(db, "rondas"), where("status", "==", "in_progress"));
   const snap = await getDocs(q);
   if (snap.empty) return null;
-  const d = snap.docs[0];
-  return { id: d.id, ...d.data() };
+  const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  items.sort((a, b) => (b.startedAt?.toMillis?.() || 0) - (a.startedAt?.toMillis?.() || 0));
+  return items[0];
 }
 
 export async function createRonda(sectors) {
@@ -149,8 +146,9 @@ export async function getRonda(rondaId) {
 }
 
 export async function getHistory(dateFrom, dateTo) {
-  let constraints = [where("status", "==", "completed"), orderBy("startedAt", "desc")];
-  const q = query(collection(db, "rondas"), ...constraints);
+  // Filtro simples (sem orderBy) para não exigir índice composto no Firestore;
+  // ordenação e filtro de datas são feitos no cliente.
+  const q = query(collection(db, "rondas"), where("status", "==", "completed"));
   const snap = await getDocs(q);
   let items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (dateFrom) {
@@ -161,5 +159,6 @@ export async function getHistory(dateFrom, dateTo) {
     const to = new Date(dateTo + "T23:59:59");
     items = items.filter(r => r.startedAt && r.startedAt.toDate() <= to);
   }
+  items.sort((a, b) => (b.startedAt?.toMillis?.() || 0) - (a.startedAt?.toMillis?.() || 0));
   return items;
 }
