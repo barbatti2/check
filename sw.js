@@ -1,4 +1,4 @@
-const CACHE_NAME = "ronda-pet-v1";
+const CACHE_NAME = "ronda-pet-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
