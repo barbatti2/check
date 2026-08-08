@@ -14,7 +14,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
 
 <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -49,15 +49,20 @@
       </button>
     </div>
 
-    <div id="home-resume-card" class="resume-card hidden">
-      <div class="resume-info">
-        <span id="resume-icon-wrap"><i data-lucide="play-circle"></i></span>
-        <div>
-          <p class="resume-title">Ronda em andamento</p>
-          <p class="resume-sub" id="resume-sub-text">Continue de onde parou</p>
-        </div>
+    <div id="home-resume-card" class="swipe-wrap hidden">
+      <div class="swipe-actions">
+        <button id="btn-resume-ronda" class="swipe-action swipe-action--primary">Continuar</button>
       </div>
-      <button id="btn-resume-ronda" class="btn btn-primary btn-sm">Continuar</button>
+      <div class="swipe-content resume-card">
+        <div class="resume-info">
+          <span id="resume-icon-wrap"><i data-lucide="play-circle"></i></span>
+          <div>
+            <p class="resume-title">Ronda em andamento</p>
+            <p class="resume-sub" id="resume-sub-text">Continue de onde parou</p>
+          </div>
+        </div>
+        <div class="resume-swipe-hint"><i data-lucide="chevrons-left"></i></div>
+      </div>
     </div>
   </div>
 </main>
@@ -182,28 +187,39 @@
 <main id="screen-history" class="screen">
   <header class="topbar">
     <button class="icon-btn" data-nav="screen-home"><i data-lucide="chevron-left"></i></button>
-    <div class="topbar-title"><h2>Histórico</h2></div>
+    <div class="topbar-title">
+      <h2>Histórico</h2>
+      <p class="topbar-sub">Rondas realizadas</p>
+    </div>
     <span class="topbar-spacer"></span>
   </header>
 
   <section class="section-block">
-    <div class="filter-chips" id="history-filter-chips">
-      <button type="button" class="filter-chip is-selected" data-range="all">Tudo</button>
-      <button type="button" class="filter-chip" data-range="7">7 dias</button>
-      <button type="button" class="filter-chip" data-range="30">30 dias</button>
-      <button type="button" class="filter-chip" data-range="month">Este mês</button>
-      <button type="button" class="filter-chip" data-range="custom"><i data-lucide="calendar-range"></i></button>
-    </div>
-    <div class="filter-custom hidden" id="filter-custom-dates">
-      <label class="field-inline">
-        <span>De</span>
-        <input type="date" id="filter-date-from" />
-      </label>
-      <label class="field-inline">
-        <span>Até</span>
-        <input type="date" id="filter-date-to" />
-      </label>
-      <button id="btn-clear-filter" class="btn-text">Limpar</button>
+    <div class="history-toolbar-card">
+      <div class="history-toolbar-label">
+        <i data-lucide="sliders-horizontal"></i>
+        <span>Período</span>
+      </div>
+      <div class="filter-chips" id="history-filter-chips">
+        <button type="button" class="filter-chip is-selected" data-range="all">Tudo</button>
+        <button type="button" class="filter-chip" data-range="7">7 dias</button>
+        <button type="button" class="filter-chip" data-range="30">30 dias</button>
+        <button type="button" class="filter-chip" data-range="month">Este mês</button>
+        <button type="button" class="filter-chip filter-chip--icon" data-range="custom">
+          <i data-lucide="calendar-range"></i><span>Escolher</span>
+        </button>
+      </div>
+      <div class="filter-custom hidden" id="filter-custom-dates">
+        <label class="field-inline">
+          <span>De</span>
+          <input type="date" id="filter-date-from" />
+        </label>
+        <label class="field-inline">
+          <span>Até</span>
+          <input type="date" id="filter-date-to" />
+        </label>
+        <button id="btn-clear-filter" class="btn-text">Limpar</button>
+      </div>
     </div>
   </section>
 
