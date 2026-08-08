@@ -167,6 +167,10 @@ export async function getRonda(rondaId) {
   return { id: snap.id, ...snap.data() };
 }
 
+export async function deleteRonda(rondaId) {
+  await deleteDoc(doc(db, "rondas", rondaId));
+}
+
 export async function getHistory(dateFrom, dateTo) {
   // Filtro simples (sem orderBy) para não exigir índice composto no Firestore;
   // ordenação e filtro de datas são feitos no cliente.
