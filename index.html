@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Ronda · Gestão de Loja</title>
+<meta name="description" content="Rondas diárias de checklist para gestão de loja pet." />
+<meta name="theme-color" content="#F4F5F3" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Ronda" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- ============ HOME ============ -->
+<main id="screen-home" class="screen screen-home is-active">
+  <div class="home-wrap">
+    <div class="home-brand">
+      <div class="brand-mark"><i data-lucide="paw-print"></i></div>
+      <p class="eyebrow">Ronda diária</p>
+      <h1 class="home-title">Checklist da loja</h1>
+      <p class="home-sub">Confira os setores antes do checklist oficial.</p>
+    </div>
+
+    <div class="home-actions">
+      <button id="btn-start-ronda" class="btn btn-primary btn-lg">
+        <i data-lucide="list-checks"></i>
+        <span>Iniciar ronda</span>
+      </button>
+
+      <button id="btn-history" class="btn btn-ghost btn-lg">
+        <i data-lucide="history"></i>
+        <span>Histórico de rondas</span>
+      </button>
+
+      <button id="btn-settings" class="btn btn-ghost btn-lg">
+        <i data-lucide="settings-2"></i>
+        <span>Configurações</span>
+      </button>
+    </div>
+
+    <div id="home-resume-card" class="resume-card hidden">
+      <div class="resume-info">
+        <i data-lucide="play-circle"></i>
+        <div>
+          <p class="resume-title">Ronda em andamento</p>
+          <p class="resume-sub" id="resume-sub-text">Continue de onde parou</p>
+        </div>
+      </div>
+      <button id="btn-resume-ronda" class="btn btn-primary btn-sm">Continuar</button>
+    </div>
+  </div>
+</main>
+
+<!-- ============ RONDA · SETORES ============ -->
+<main id="screen-ronda-sectors" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="screen-home"><i data-lucide="chevron-left"></i></button>
+    <div class="topbar-title">
+      <h2>Ronda de hoje</h2>
+      <p id="ronda-date-label" class="topbar-sub"></p>
+    </div>
+    <span class="topbar-spacer"></span>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-ring-block">
+      <svg class="progress-ring" viewBox="0 0 120 120">
+        <circle class="progress-ring-track" cx="60" cy="60" r="52"></circle>
+        <circle id="progress-ring-fill" class="progress-ring-fill" cx="60" cy="60" r="52"></circle>
+      </svg>
+      <div class="progress-ring-label">
+        <span id="progress-percent">0%</span>
+        <small>concluído</small>
+      </div>
+    </div>
+    <div class="progress-stats">
+      <div class="pstat"><span id="stat-conform" class="pstat-num pstat-ok">0</span><small>conformes</small></div>
+      <div class="pstat"><span id="stat-nonconform" class="pstat-num pstat-bad">0</span><small>não conformes</small></div>
+      <div class="pstat"><span id="stat-pending" class="pstat-num">0</span><small>setores restantes</small></div>
+    </div>
+  </div>
+
+  <section class="section-block">
+    <div id="sector-list" class="card-list"></div>
+  </section>
+
+  <div id="ronda-finish-bar" class="finish-bar hidden">
+    <button id="btn-finish-ronda" class="btn btn-primary btn-lg">
+      <i data-lucide="flag"></i>
+      <span>Ver resultado da ronda</span>
+    </button>
+  </div>
+</main>
+
+<!-- ============ RONDA · PERGUNTAS DO SETOR ============ -->
+<main id="screen-sector-questions" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="screen-ronda-sectors"><i data-lucide="chevron-left"></i></button>
+    <div class="topbar-title">
+      <h2 id="sector-questions-title">Setor</h2>
+      <p id="sector-questions-progress" class="topbar-sub">0 de 0 respondidas</p>
+    </div>
+    <span class="topbar-spacer"></span>
+  </header>
+
+  <div class="mini-progress"><div id="mini-progress-fill" class="mini-progress-fill"></div></div>
+
+  <section class="section-block">
+    <div id="question-list" class="question-list"></div>
+  </section>
+
+  <div class="finish-bar">
+    <button id="btn-finish-sector" class="btn btn-primary btn-lg" disabled>
+      <i data-lucide="check-check"></i>
+      <span>Finalizar setor</span>
+    </button>
+  </div>
+</main>
+
+<!-- ============ RESUMO DA RONDA ============ -->
+<main id="screen-summary" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="screen-home" id="btn-summary-back"><i data-lucide="chevron-left"></i></button>
+    <div class="topbar-title">
+      <h2>Resultado</h2>
+      <p id="summary-date-label" class="topbar-sub"></p>
+    </div>
+    <span class="topbar-spacer"></span>
+  </header>
+
+  <section class="section-block">
+    <div class="score-card">
+      <div class="score-ring-block">
+        <svg class="progress-ring progress-ring--score" viewBox="0 0 120 120">
+          <circle class="progress-ring-track" cx="60" cy="60" r="52"></circle>
+          <circle id="score-ring-fill" class="progress-ring-fill" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="progress-ring-label">
+          <span id="score-percent">0%</span>
+          <small>pontuação</small>
+        </div>
+      </div>
+      <div class="score-breakdown">
+        <div class="score-row"><i data-lucide="check-circle-2" class="ic-ok"></i><span>Conformes</span><b id="summary-conform">0</b></div>
+        <div class="score-row"><i data-lucide="x-circle" class="ic-bad"></i><span>Não conformidades</span><b id="summary-nonconform">0</b></div>
+        <div class="score-row"><i data-lucide="flag" class="ic-warn"></i><span>Pendências abertas</span><b id="summary-pendencias-count">0</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-block">
+    <div class="section-header">
+      <h3>Pendências</h3>
+    </div>
+    <div id="summary-pendencias-list" class="card-list"></div>
+  </section>
+
+  <section class="section-block summary-actions">
+    <button id="btn-export-excel" class="btn btn-secondary btn-lg">
+      <i data-lucide="file-spreadsheet"></i>
+      <span>Exportar para Excel</span>
+    </button>
+    <button id="btn-finish-summary" class="btn btn-primary btn-lg">
+      <i data-lucide="check"></i>
+      <span>Concluir e voltar ao início</span>
+    </button>
+  </section>
+</main>
+
+<!-- ============ HISTÓRICO ============ -->
+<main id="screen-history" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="screen-home"><i data-lucide="chevron-left"></i></button>
+    <div class="topbar-title"><h2>Histórico</h2></div>
+    <span class="topbar-spacer"></span>
+  </header>
+
+  <section class="section-block">
+    <div class="filter-row">
+      <label class="field-inline">
+        <span>De</span>
+        <input type="date" id="filter-date-from" />
+      </label>
+      <label class="field-inline">
+        <span>Até</span>
+        <input type="date" id="filter-date-to" />
+      </label>
+      <button id="btn-clear-filter" class="btn-text">Limpar</button>
+    </div>
+  </section>
+
+  <section class="section-block">
+    <div id="history-list" class="card-list"></div>
+    <div id="history-empty" class="empty-state hidden">
+      <i data-lucide="inbox"></i>
+      <p>Nenhuma ronda encontrada neste período.</p>
+    </div>
+  </section>
+</main>
+
+<!-- ============ CONFIGURAÇÕES · SETORES ============ -->
+<main id="screen-settings" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="screen-home"><i data-lucide="chevron-left"></i></button>
+    <div class="topbar-title"><h2>Configurações</h2><p class="topbar-sub">Setores e perguntas</p></div>
+    <span class="topbar-spacer"></span>
+  </header>
+
+  <section class="section-block">
+    <div id="settings-sector-list" class="card-list"></div>
+  </section>
+
+  <section class="section-block">
+    <div class="add-inline">
+      <input type="text" id="input-new-sector" placeholder="Nome do novo setor" />
+      <button id="btn-add-sector" class="icon-btn icon-btn-filled"><i data-lucide="plus"></i></button>
+    </div>
+  </section>
+</main>
+
+<!-- ============ CONFIGURAÇÕES · PERGUNTAS DO SETOR ============ -->
+<main id="screen-settings-questions" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="screen-settings"><i data-lucide="chevron-left"></i></button>
+    <div class="topbar-title">
+      <h2 id="settings-sector-title">Setor</h2>
+      <p class="topbar-sub">Perguntas do checklist</p>
+    </div>
+    <button class="icon-btn" id="btn-delete-sector"><i data-lucide="trash-2"></i></button>
+  </header>
+
+  <section class="section-block">
+    <div id="settings-question-list" class="card-list"></div>
+    <div id="settings-question-empty" class="empty-state hidden">
+      <i data-lucide="list-plus"></i>
+      <p>Nenhuma pergunta cadastrada ainda.</p>
+    </div>
+  </section>
+
+  <section class="section-block">
+    <div class="add-inline add-inline--stack">
+      <textarea id="input-new-question" placeholder="Digite a pergunta do checklist" rows="2"></textarea>
+      <button id="btn-add-question" class="btn btn-primary">
+        <i data-lucide="plus"></i><span>Adicionar pergunta</span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<!-- ============ MODAL · PENDÊNCIA ============ -->
+<div id="modal-pendencia" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3>Criar pendência</h3>
+      <button class="icon-btn" data-close-modal><i data-lucide="x"></i></button>
+    </div>
+    <p id="pendencia-question-ref" class="modal-ref"></p>
+
+    <div class="field">
+      <label for="pendencia-descricao">Descrição</label>
+      <textarea id="pendencia-descricao" rows="3" placeholder="Descreva o que precisa ser corrigido"></textarea>
+    </div>
+
+    <div class="field">
+      <label for="pendencia-responsavel">Responsável</label>
+      <input type="text" id="pendencia-responsavel" placeholder="Nome do responsável" />
+    </div>
+
+    <div class="field">
+      <label for="pendencia-prazo">Prazo</label>
+      <input type="date" id="pendencia-prazo" />
+    </div>
+
+    <div class="field">
+      <label>Prioridade</label>
+      <div class="priority-group" id="pendencia-prioridade">
+        <button type="button" class="priority-chip priority-baixa" data-value="Baixa">Baixa</button>
+        <button type="button" class="priority-chip priority-media" data-value="Média">Média</button>
+        <button type="button" class="priority-chip priority-alta" data-value="Alta">Alta</button>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button id="btn-remove-pendencia" class="btn btn-ghost hidden">Remover pendência</button>
+      <button id="btn-save-pendencia" class="btn btn-primary">Salvar pendência</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL · CONFIRMAÇÃO GENÉRICA ============ -->
+<div id="modal-confirm" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet--compact">
+    <div class="modal-handle"></div>
+    <h3 id="confirm-title">Confirmar ação</h3>
+    <p id="confirm-body" class="modal-ref"></p>
+    <div class="modal-actions">
+      <button id="btn-confirm-cancel" class="btn btn-ghost">Cancelar</button>
+      <button id="btn-confirm-ok" class="btn btn-primary">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL · DETALHE HISTÓRICO ============ -->
+<div id="modal-history-detail" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet--tall">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 id="history-detail-title">Ronda</h3>
+      <button class="icon-btn" data-close-modal><i data-lucide="x"></i></button>
+    </div>
+    <div id="history-detail-body"></div>
+    <div class="modal-actions">
+      <button id="btn-export-history-excel" class="btn btn-secondary">
+        <i data-lucide="file-spreadsheet"></i><span>Exportar Excel</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay hidden">
+  <i data-lucide="loader-circle" class="spin"></i>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
