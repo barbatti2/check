@@ -1,4 +1,4 @@
-const CACHE_NAME = "ronda-pet-v2";
+const CACHE_NAME = "ronda-pet-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -28,6 +28,9 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Network-first for our own files: always tries to fetch the latest version
+// first (so updates show immediately), and only falls back to the cached
+// copy when there's no connection (offline use).
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
@@ -35,17 +38,14 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
