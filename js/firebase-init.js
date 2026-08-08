@@ -13,12 +13,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "SEU_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyB1iyuDETyPVzzZDXgGF74jVmHIYF7XjVg",
+  authDomain: "check-6d34c.firebaseapp.com",
+  projectId: "check-6d34c",
+  storageBucket: "check-6d34c.firebasestorage.app",
+  messagingSenderId: "753078110849",
+  appId: "1:753078110849:web:cff7e9560eac5039169b80"
 };
 
 export const isFirebaseConfigured = firebaseConfig.apiKey !== "SUA_API_KEY";
