@@ -1,7 +1,7 @@
 /* ============================================================
    RONDA — design tokens
-   Palette: Inkberry (deep plum-ink) + Peach — a boutique pet/retail
-   duo, swapped as bg/text pairs between light and dark mode.
+   Palette: Blueberry (azul profundo) + Cream Soda — dupla azul/creme
+   boutique pet/retail, trocada como par bg/text entre modo claro e escuro.
    Type: Fraunces (display, soft-serif) + Plus Jakarta Sans (body)
    + IBM Plex Mono (data)
 ============================================================ */
@@ -16,12 +16,12 @@
   --line: #E4E3DD;
   --line-soft: #ECEBE5;
 
-  --accent: #1A0B2E;           /* Inkberry */
-  --accent-strong: #2E1A4A;
-  --accent-contrast: #FFB7A5;  /* Peach — text/icons on accent surfaces */
-  --accent-soft: #FCE3DA;
-  --accent-soft-2: #FFF2ED;
-  --accent-shadow: rgba(26,11,46,0.26);
+  --accent: #243B8F;            /* Blueberry */
+  --accent-strong: #1B2E70;
+  --accent-contrast: #FFF0C9;  /* Cream Soda — texto/ícones sobre superfícies accent */
+  --accent-soft: #E1E5F6;
+  --accent-soft-2: #EEF1FA;
+  --accent-shadow: rgba(36,59,143,0.28);
 
   --ok: #33604F;
   --ok-soft: #E1EAE3;
@@ -67,12 +67,12 @@
     --ink-faint: #6E6F66;
     --line: #2C2D26;
     --line-soft: #26261F;
-    --accent: #FFB7A5;          /* Peach pops on dark surfaces */
-    --accent-strong: #FFC9BC;
-    --accent-contrast: #1A0B2E; /* Inkberry text/icons on peach */
-    --accent-soft: #3A2436;
-    --accent-soft-2: #2C1B29;
-    --accent-shadow: rgba(255,183,165,0.2);
+    --accent: #FFF0C9;          /* Cream Soda pops on dark surfaces */
+    --accent-strong: #FFE6A6;
+    --accent-contrast: #243B8F; /* Blueberry text/icons on cream */
+    --accent-soft: #393420;
+    --accent-soft-2: #2B2717;
+    --accent-shadow: rgba(255,240,201,0.2);
     --ok: #6FA88E;
     --ok-soft: #223028;
     --bad: #D98A7C;
@@ -115,7 +115,7 @@ body{
     overflow: hidden;
     border: 1px solid var(--line-soft);
   }
-  .toast{ max-width: calc(var(--app-max) - 32px); }
+  .toast{ max-width: calc(var(--app-max) - 40px); }
 }
 
 h1,h2,h3{ font-family: var(--font-display); font-weight:800; margin:0; color:var(--ink); letter-spacing:-0.01em;}
@@ -207,6 +207,7 @@ input,textarea{ font-family:inherit; }
   color: var(--ink);
   box-shadow: var(--shadow-sm), var(--shadow-inset);
 }
+.btn-ghost--danger{ color: var(--bad); }
 
 .btn-text{
   background:none; border:none; color: var(--accent); font-weight:600; font-size:13.5px; cursor:pointer; padding:6px 4px;
@@ -258,46 +259,8 @@ input,textarea{ font-family:inherit; }
 .resume-info svg{ width:26px; height:26px; color: var(--accent); }
 .resume-title{ margin:0; font-weight:600; font-size:14px; }
 .resume-sub{ margin:2px 0 0; font-size:12.5px; color:var(--ink-muted); }
-.resume-swipe-hint{ display:flex; align-items:center; color: var(--ink-faint); opacity:.55; flex-shrink:0; }
-.resume-swipe-hint svg{ width:17px; height:17px; animation: swipeHint 1.8s ease-in-out infinite; }
-@keyframes swipeHint{
-  0%,100%{ transform: translateX(0); opacity:.35; }
-  50%{ transform: translateX(-4px); opacity:.85; }
-}
-
-/* ---------------- Swipe actions (arrastar para revelar) ---------------- */
-.swipe-wrap{ position:relative; }
-.swipe-actions{
-  position:absolute; top:0; right:0; bottom:0; display:flex;
-  overflow:hidden; border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-}
-.swipe-action{
-  border:none; cursor:pointer; -webkit-user-select:none; user-select:none;
-  display:flex; align-items:center; justify-content:center; gap:6px;
-  font-family: var(--font-body); flex-shrink:0;
-}
-.swipe-action svg{ width:18px; height:18px; }
-.swipe-action--primary{
-  width:116px; background: var(--accent); color: var(--accent-contrast);
-  font-weight:700; font-size:14px;
-}
-.swipe-action--edit{
-  width:72px; flex-direction:column; background: var(--accent); color: var(--accent-contrast);
-  font-weight:600; font-size:11.5px;
-}
-.swipe-action--delete{
-  width:72px; flex-direction:column; background: #D6392C; color: #fff;
-  font-weight:600; font-size:11.5px;
-}
-.swipe-content{
-  position:relative; transform: translateX(0);
-  transition: transform var(--dur-mid) var(--ease);
-  touch-action: pan-y;
-}
-.swipe-content.is-open{ box-shadow: -8px 0 18px rgba(20,20,15,0.10); }
-/* O lado que encosta no menu de ações fica reto, sem quina arredondada
-   sobrando por cima do menu quando o card é arrastado. */
-.swipe-wrap .swipe-content{ border-top-right-radius:0; border-bottom-right-radius:0; }
+.resume-card{ cursor:pointer; transition: transform var(--dur-fast) var(--ease); }
+.resume-card:active{ transform: scale(.985); }
 
 /* ---------------- Progress ring ---------------- */
 .progress-wrap{
@@ -475,9 +438,6 @@ input,textarea{ font-family:inherit; }
 .filter-custom{ display:flex; align-items:flex-end; gap:10px; margin-top:12px; }
 .filter-custom.hidden{ display:none; }
 
-.swipe-hint-icon{ display:flex; align-items:center; color: var(--ink-faint); opacity:.4; flex-shrink:0; }
-.swipe-hint-icon svg{ width:15px; height:15px; }
-
 .field-inline{ display:flex; flex-direction:column; gap:5px; flex:1; font-size:11.5px; color:var(--ink-muted); font-family: var(--font-mono); text-transform:uppercase; letter-spacing:.04em; }
 .field-inline input{
   border:1px solid var(--line); border-radius: var(--radius-md); padding:10px 12px;
@@ -607,13 +567,15 @@ input,textarea{ font-family:inherit; }
 
 /* ---------------- Toast ---------------- */
 .toast{
-  position:fixed; left:50%; bottom: calc(28px + var(--safe-bottom)); transform: translateX(-50%) translateY(20px);
-  background: var(--ink); color: var(--bg); font-size:13.5px; font-weight:500;
-  padding: 13px 22px; border-radius: var(--radius-pill); box-shadow: var(--shadow-lg);
-  white-space: nowrap; line-height:1.4;
-  opacity:0; pointer-events:none; transition: opacity var(--dur-mid) var(--ease), transform var(--dur-mid) var(--ease); z-index:80; max-width: calc(100% - 40px); text-align:center;
+  position:fixed; left:50%; bottom: calc(20px + var(--safe-bottom));
+  transform: translateX(-50%) translateY(14px);
+  width: calc(100% - 32px); max-width: calc(var(--app-max) - 40px);
+  background: var(--ink); color: var(--bg); font-size:14px; font-weight:600;
+  padding: 16px 20px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  white-space: normal; line-height:1.45; text-align:left;
+  opacity:0; pointer-events:none;
+  transition: opacity var(--dur-mid) var(--ease), transform var(--dur-mid) var(--ease); z-index:80;
 }
-.toast.toast--wrap{ white-space: normal; border-radius: var(--radius-lg); }
 .toast.toast--error{ background: #D6392C; color:#fff; }
 .toast.is-visible{ opacity:1; transform: translateX(-50%) translateY(0); }
 
