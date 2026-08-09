@@ -209,44 +209,72 @@ input,textarea{ font-family:inherit; }
   gap: 44px;
 }
 .home-banner{
-  display:flex; align-items:center; gap:20px;
-  padding: 30px 26px;
+  display:flex; align-items:stretch;
   border-radius: var(--radius-xl);
-  background: linear-gradient(100deg, var(--accent) 0%, var(--accent-soft) 34%, var(--accent-soft) 100%);
+  background: var(--surface-2);
   box-shadow: var(--shadow-sm);
+  overflow:hidden;
 }
-.home-banner-timeline{
-  display:flex; flex-direction:column; align-items:center; flex-shrink:0;
+
+/* --- painel azul com "ponta de seta" à direita --- */
+.home-banner-hero{
+  position:relative; flex-shrink:0; width:172px;
+  padding: 26px 30px 26px 22px;
+  background: linear-gradient(160deg, var(--accent) 0%, var(--accent-strong) 100%);
+  clip-path: polygon(0 0, 82% 0, 100% 50%, 82% 100%, 0 100%);
+  margin-right: -14px;
+  z-index:2;
 }
-.timeline-node{
-  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+.hero-icon{
+  width:38px; height:38px; margin-bottom:14px; border-radius:11px;
+  background: rgba(255,240,201,0.16); color: var(--accent-contrast);
+  display:flex; align-items:center; justify-content:center;
 }
-.timeline-node--main{
-  width:56px; height:56px; border-radius:50%;
-  background: var(--accent-contrast); color: var(--accent);
-  box-shadow: 0 10px 20px -8px rgba(0,0,0,0.28);
-}
-.timeline-node--main svg{ width:26px; height:26px; }
-.timeline-node--check{
-  width:30px; height:30px; border-radius:50%;
-  background: var(--surface); color: var(--accent);
-  border:1px solid var(--line-soft); box-shadow: var(--shadow-sm);
-}
-.timeline-node--check svg{ width:15px; height:15px; stroke-width:3; }
-.timeline-line{ width:2px; height:22px; background: rgba(255,240,201,0.45); margin:2px 0; }
-.home-banner-text{ flex:1; min-width:0; text-align:center; }
+.hero-icon svg{ width:20px; height:20px; }
 .eyebrow{
-  font-family: var(--font-mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
-  color: var(--accent); font-weight:600; margin:0 0 6px;
+  font-family: var(--font-mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+  color: var(--accent-contrast); opacity:.85; font-weight:600; margin:0 0 4px;
 }
 .home-title{
   font-family: var(--font-serif); font-weight:700; font-style:normal;
-  font-size:30px; line-height:1.1; letter-spacing:-0.015em;
-  color: var(--ink); margin: 0;
+  font-size:23px; line-height:1.1; letter-spacing:-0.01em;
+  color: #fff; margin: 0;
 }
 .home-title-underline{
-  display:block; width:38px; height:3px; margin:12px auto 0;
-  border-radius: 3px; background: var(--accent);
+  display:block; width:30px; height:3px; margin:10px 0 0;
+  border-radius: 3px; background: rgba(255,240,201,0.55);
+}
+
+/* --- tira de setores com rolagem horizontal --- */
+.home-banner-steps{
+  flex:1; min-width:0; display:flex; align-items:flex-start; gap:0;
+  padding: 22px 18px 18px 26px;
+  overflow-x:auto; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity;
+  scrollbar-width:none;
+}
+.home-banner-steps::-webkit-scrollbar{ display:none; }
+.step-item{
+  flex-shrink:0; display:flex; flex-direction:column; align-items:center;
+  width:76px; scroll-snap-align:start;
+}
+.step-icon{
+  width:46px; height:46px; border-radius:50%; margin-bottom:8px;
+  display:flex; align-items:center; justify-content:center;
+  background: var(--accent); color: var(--accent-contrast);
+  box-shadow: 0 6px 14px -6px var(--accent-shadow);
+}
+.step-icon svg{ width:20px; height:20px; }
+.step-name{
+  margin:0 0 6px; font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  color: var(--ink-muted); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+}
+.step-dots{ display:flex; gap:3px; }
+.step-dots span{ width:4px; height:4px; border-radius:50%; background: var(--accent); opacity:.35; }
+.step-dots span.is-filled{ opacity:1; }
+.step-connector{
+  flex-shrink:0; width:22px; height:1px; margin-top:23px;
+  background-image: radial-gradient(circle, var(--line) 1px, transparent 1.5px);
+  background-size: 6px 2px; background-repeat: repeat-x;
 }
 
 .home-actions-panel{
@@ -257,6 +285,7 @@ input,textarea{ font-family:inherit; }
   box-shadow: var(--shadow-inset);
 }
 .home-actions{ display:flex; flex-direction:column; gap:12px; }
+
 
 .resume-card{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
