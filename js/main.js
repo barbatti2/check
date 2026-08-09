@@ -165,6 +165,7 @@ async function initHome() {
 
 async function loadSectors() {
   state.sectors = await store.getSectors();
+  renderHomeSteps();
 }
 
 async function ensureSectorsLoaded() {
@@ -258,6 +259,50 @@ function computeRondaTotals() {
     });
   });
   return { totalQuestions, answered, conform, nonConform, sectorsWithContent, sectorsDone };
+}
+
+// Escolhe um ícone coerente com o nome do setor (heurística por palavra-chave),
+// com um ícone genérico de reserva para nomes que não batem com nada.
+function sectorIcon(name) {
+  const n = (name || "").toLowerCase();
+  if (/higien|limp/.test(n)) return "droplets";
+  if (/seguran|alarme|c[âa]mera/.test(n)) return "shield-check";
+  if (/manuten|el[ée]tric|equipamento/.test(n)) return "wrench";
+  if (/estoque|almoxarifado|produto/.test(n)) return "package";
+  if (/caixa|financeiro|pagamento/.test(n)) return "banknote";
+  if (/pet|animal|banho|tosa|gato|cachorro/.test(n)) return "paw-print";
+  if (/entrada|recep|atendimento|balc[ãa]o/.test(n)) return "door-open";
+  if (/finaliz|encerr|sa[íi]da/.test(n)) return "flag";
+  return "clipboard-list";
+}
+
+// Tira horizontal de setores no banner da home — reflete os setores
+// cadastrados de verdade (nome + ícone + nº de perguntas), não uma lista fixa.
+function renderHomeSteps() {
+  const wrap = $("#home-steps-scroll");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  state.sectors.forEach((sector, i) => {
+    if (i > 0) {
+      const connector = document.createElement("span");
+      connector.className = "step-connector";
+      wrap.appendChild(connector);
+    }
+    const total = sector.questions ? sector.questions.length : 0;
+    const dotsCount = Math.min(total, 5) || 1;
+    const dots = Array.from({ length: dotsCount }, () => '<span class="is-filled"></span>').join("");
+
+    const item = document.createElement("div");
+    item.className = "step-item";
+    item.style.opacity = String(Math.max(1 - i * 0.13, 0.45));
+    item.innerHTML = `
+      <span class="step-icon"><i data-lucide="${sectorIcon(sector.name)}"></i></span>
+      <p class="step-name">${sector.name}</p>
+      <span class="step-dots">${dots}</span>
+    `;
+    wrap.appendChild(item);
+  });
+  refreshIcons();
 }
 
 function renderRondaSectors() {
