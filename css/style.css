@@ -223,7 +223,6 @@ input,textarea{ font-family:inherit; }
   padding: 26px 30px 26px 22px;
   background: linear-gradient(160deg, var(--accent) 0%, var(--accent-strong) 100%);
   clip-path: polygon(0 0, 82% 0, 100% 50%, 82% 100%, 0 100%);
-  margin-right: -14px;
   z-index:2;
 }
 .eyebrow{
@@ -243,7 +242,7 @@ input,textarea{ font-family:inherit; }
 /* --- tira de setores com rolagem horizontal --- */
 .home-banner-steps{
   flex:1; min-width:0; display:flex; align-items:flex-start; gap:0;
-  padding: 22px 18px 18px 26px;
+  padding: 22px 18px 18px 34px;
   overflow-x:auto; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity;
   scrollbar-width:none;
 }
