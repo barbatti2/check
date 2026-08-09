@@ -219,21 +219,16 @@ input,textarea{ font-family:inherit; }
 /* --- painel azul com "ponta de seta" à direita --- */
 .home-banner-hero{
   position:relative; flex-shrink:0; width:172px;
+  display:flex; flex-direction:column; justify-content:center;
   padding: 26px 30px 26px 22px;
   background: linear-gradient(160deg, var(--accent) 0%, var(--accent-strong) 100%);
   clip-path: polygon(0 0, 82% 0, 100% 50%, 82% 100%, 0 100%);
   margin-right: -14px;
   z-index:2;
 }
-.hero-icon{
-  width:38px; height:38px; margin-bottom:14px; border-radius:11px;
-  background: rgba(255,240,201,0.16); color: var(--accent-contrast);
-  display:flex; align-items:center; justify-content:center;
-}
-.hero-icon svg{ width:20px; height:20px; }
 .eyebrow{
   font-family: var(--font-mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
-  color: var(--accent-contrast); opacity:.85; font-weight:600; margin:0 0 4px;
+  color: var(--accent-contrast); opacity:.85; font-weight:600; margin:8px 0 0;
 }
 .home-title{
   font-family: var(--font-serif); font-weight:700; font-style:normal;
@@ -268,9 +263,6 @@ input,textarea{ font-family:inherit; }
   margin:0 0 6px; font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
   color: var(--ink-muted); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
 }
-.step-dots{ display:flex; gap:3px; }
-.step-dots span{ width:4px; height:4px; border-radius:50%; background: var(--accent); opacity:.35; }
-.step-dots span.is-filled{ opacity:1; }
 .step-connector{
   flex-shrink:0; width:22px; height:1px; margin-top:23px;
   background-image: radial-gradient(circle, var(--line) 1px, transparent 1.5px);
