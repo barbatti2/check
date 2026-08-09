@@ -22,8 +22,8 @@
   --accent: #243B8F;            /* Blueberry */
   --accent-strong: #1B2E70;
   --accent-contrast: #FFF0C9;  /* Cream Soda — texto/ícones sobre superfícies accent */
-  --accent-soft: #E1E5F6;
-  --accent-soft-2: #EEF1FA;
+  --accent-soft: #CDD5F2;
+  --accent-soft-2: #B9C3EC;
   --accent-shadow: rgba(36,59,143,0.28);
 
   --ok: #33604F;
@@ -212,7 +212,7 @@ input,textarea{ font-family:inherit; }
   display:flex; align-items:center; gap:20px;
   padding: 30px 26px;
   border-radius: var(--radius-xl);
-  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--surface) 78%);
+  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-2) 55%, var(--accent-soft) 100%);
   border: 1px solid var(--line-soft);
   box-shadow: var(--shadow-sm);
 }
