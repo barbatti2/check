@@ -149,13 +149,14 @@ export async function finishRonda(rondaId, { score, conformCount, nonConformCoun
 // Retorna a ronda de hoje, esteja ela em andamento ou já concluída
 // (usado para permitir apenas 1 ronda por dia, com opção de editar).
 export async function getTodayRonda() {
-  const inProgress = await getInProgressRonda();
+  const [inProgress, completedSnap] = await Promise.all([
+    getInProgressRonda(),
+    getDocs(query(collection(db, "rondas"), where("status", "==", "completed")))
+  ]);
   if (inProgress && isSameDay(inProgress.startedAt)) return inProgress;
 
-  const q = query(collection(db, "rondas"), where("status", "==", "completed"));
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (completedSnap.empty) return null;
+  const items = completedSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   items.sort((a, b) => (b.startedAt?.toMillis?.() || 0) - (a.startedAt?.toMillis?.() || 0));
   const last = items[0];
   return last && isSameDay(last.startedAt) ? last : null;

@@ -1080,9 +1080,13 @@ async function init() {
   }
 
   try {
-    await store.ensureDefaultSectors();
-    await loadSectors();
-    await initHome();
+    // A ronda de hoje (card da home) não depende dos setores estarem
+    // carregados — busca as duas coisas em paralelo, em vez de enfileirar,
+    // pra o card aparecer assim que possível ao reabrir o app.
+    await Promise.all([
+      (async () => { await store.ensureDefaultSectors(); await loadSectors(); })(),
+      initHome()
+    ]);
   } catch (e) {
     console.error(e);
     showToast("Erro ao conectar ao Firestore.");
