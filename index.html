@@ -6,6 +6,7 @@
 <title>Ronda · Gestão de Loja</title>
 <meta name="description" content="Rondas diárias de checklist para gestão de loja pet." />
 <meta name="theme-color" content="#F4F5F3" />
+<meta name="color-scheme" content="light" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,7 +15,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
 
 <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -25,44 +26,66 @@
 <!-- ============ HOME ============ -->
 <main id="screen-home" class="screen screen-home is-active">
   <div class="home-wrap">
-    <div class="home-brand">
-      <div class="brand-mark"><i data-lucide="paw-print"></i></div>
-      <p class="eyebrow">Ronda diária</p>
-      <h1 class="home-title">Checklist da loja</h1>
-      <p class="home-sub">Confira os setores antes do checklist oficial.</p>
-    </div>
-
-    <div class="home-actions">
-      <button id="btn-start-ronda" class="btn btn-primary btn-lg">
-        <i data-lucide="list-checks"></i>
-        <span>Iniciar ronda</span>
-      </button>
-
-      <button id="btn-history" class="btn btn-ghost btn-lg">
-        <i data-lucide="history"></i>
-        <span>Histórico de rondas</span>
-      </button>
-
-      <button id="btn-settings" class="btn btn-ghost btn-lg">
-        <i data-lucide="settings-2"></i>
-        <span>Configurações</span>
-      </button>
-    </div>
-
-    <div id="home-resume-card" class="swipe-wrap hidden">
-      <div class="swipe-actions">
-        <button id="btn-resume-ronda" class="swipe-action swipe-action--primary">Continuar</button>
+    <div class="home-banner">
+      <div class="home-banner-hero">
+        <h1 class="home-title">Checklist</h1>
+        <p class="eyebrow">Ronda diária</p>
+        <span class="home-title-underline"></span>
       </div>
-      <div class="swipe-content resume-card">
-        <div class="resume-info">
-          <span id="resume-icon-wrap"><i data-lucide="play-circle"></i></span>
-          <div>
-            <p class="resume-title">Ronda em andamento</p>
-            <p class="resume-sub" id="resume-sub-text">Continue de onde parou</p>
-          </div>
+      <div class="home-banner-steps">
+        <div class="step-item">
+          <span class="step-icon"><i data-lucide="paw-print"></i></span>
+          <p class="step-name">Inspeção</p>
         </div>
-        <div class="resume-swipe-hint"><i data-lucide="chevrons-left"></i></div>
+        <span class="step-connector"></span>
+        <div class="step-item">
+          <span class="step-icon"><i data-lucide="clipboard-list"></i></span>
+          <p class="step-name">Processos</p>
+        </div>
       </div>
+    </div>
+
+
+    <div class="home-actions-panel">
+      <div class="home-actions">
+        <button id="btn-start-ronda" class="menu-card menu-card--primary">
+          <span class="menu-card-icon"><i data-lucide="play-circle"></i></span>
+          <span class="menu-card-text">
+            <span class="menu-card-title">Iniciar ronda</span>
+            <span class="menu-card-sub">Comece uma nova ronda agora</span>
+          </span>
+          <span class="menu-card-chevron"><i data-lucide="chevron-right"></i></span>
+        </button>
+
+        <button id="btn-history" class="menu-card">
+          <span class="menu-card-icon"><i data-lucide="history"></i></span>
+          <span class="menu-card-text">
+            <span class="menu-card-title">Histórico de rondas</span>
+            <span class="menu-card-sub">Veja todas as rondas realizadas</span>
+          </span>
+          <span class="menu-card-chevron"><i data-lucide="chevron-right"></i></span>
+        </button>
+
+        <button id="btn-settings" class="menu-card">
+          <span class="menu-card-icon"><i data-lucide="settings-2"></i></span>
+          <span class="menu-card-text">
+            <span class="menu-card-title">Configurações</span>
+            <span class="menu-card-sub">Ajuste as preferências do app</span>
+          </span>
+          <span class="menu-card-chevron"><i data-lucide="chevron-right"></i></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="home-resume-card" class="resume-card hidden">
+      <div class="resume-info">
+        <span id="resume-icon-wrap"><i data-lucide="play-circle"></i></span>
+        <div>
+          <p class="resume-title">Ronda em andamento</p>
+          <p class="resume-sub" id="resume-sub-text">Continue de onde parou</p>
+        </div>
+      </div>
+      <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
     </div>
   </div>
 </main>
@@ -347,6 +370,12 @@
     <div class="modal-actions">
       <button id="btn-export-history-excel" class="btn btn-secondary">
         <i data-lucide="file-spreadsheet"></i><span>Exportar Excel</span>
+      </button>
+      <button id="btn-edit-history" class="btn btn-secondary">
+        <i data-lucide="pencil"></i><span>Editar checklist</span>
+      </button>
+      <button id="btn-delete-history" class="btn btn-ghost btn-ghost--danger">
+        <i data-lucide="trash-2"></i><span>Excluir checklist</span>
       </button>
     </div>
   </div>
