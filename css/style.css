@@ -50,7 +50,7 @@
   --dur-mid: 260ms;
   --dur-slow: 420ms;
 
-  --font-display: 'Manrope', 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+  --font-display: 'Outfit', 'Manrope', 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
   --font-serif: 'Fraunces', ui-serif, Georgia, serif;
   --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -286,6 +286,8 @@ input,textarea{ font-family:inherit; }
   transition: transform var(--dur-fast) var(--ease);
 }
 .menu-card:active{ transform: scale(.98); }
+.menu-card.is-loading{ opacity:.6; pointer-events:none; }
+.menu-card.is-loading .menu-card-chevron svg{ animation: spin .7s linear infinite; }
 .menu-card-icon{
   flex-shrink:0; width:44px; height:44px; border-radius:13px;
   display:flex; align-items:center; justify-content:center;
@@ -293,7 +295,7 @@ input,textarea{ font-family:inherit; }
 }
 .menu-card-icon svg{ width:21px; height:21px; }
 .menu-card-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-.menu-card-title{ font-weight:700; font-size:15px; color: var(--ink); }
+.menu-card-title{ font-family: var(--font-display); font-weight:700; font-size:15.5px; color: var(--ink); letter-spacing:-0.01em; }
 .menu-card-sub{ font-size:12.5px; color: var(--ink-muted); }
 .menu-card-chevron{ flex-shrink:0; color: var(--ink-faint); display:flex; }
 .menu-card-chevron svg{ width:19px; height:19px; }
@@ -358,25 +360,32 @@ input,textarea{ font-family:inherit; }
 .card-list{ display:flex; flex-direction:column; gap:10px; }
 
 .sector-card{
+  position:relative;
   display:flex; align-items:center; gap:14px;
   background: var(--surface); border-radius: var(--radius-lg);
-  padding: 15px 16px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
+  padding: 16px 18px 16px 22px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
   cursor:pointer; transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+.sector-card::before{
+  content:""; position:absolute; left:8px; top:14px; bottom:14px; width:4px;
+  border-radius: var(--radius-pill); background: var(--ink);
+  opacity:.85;
 }
 .sector-card:active{ transform: scale(.985); }
 .sector-card.is-done{ opacity:.62; }
+.sector-card.is-done::before{ background: var(--ok); }
 .sector-card.is-empty{ opacity:.42; cursor:not-allowed; }
 .sector-status{
-  width:36px; height:36px; border-radius:50%; flex-shrink:0;
+  width:44px; height:44px; border-radius:50%; flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
-  background: var(--surface-2); color: var(--ink-faint);
+  background: var(--surface-2); color: var(--ink-muted);
   transition: background var(--dur-mid) var(--ease), color var(--dur-mid) var(--ease);
 }
-.sector-status svg{ width:19px; height:19px; }
+.sector-status svg{ width:21px; height:21px; }
 .sector-card.is-done .sector-status{ background: var(--ok-soft); color: var(--ok); }
 .sector-body{ flex:1; min-width:0; }
-.sector-name{ margin:0; font-weight:600; font-size:14.5px; }
-.sector-meta{ margin:2px 0 0; font-size:12px; color:var(--ink-muted); font-family:var(--font-mono); }
+.sector-name{ margin:0; font-family: var(--font-display); font-weight:700; font-size:17px; letter-spacing:-0.01em; color: var(--ink); }
+.sector-meta{ margin:4px 0 0; font-size:12.5px; color:var(--ink-muted); font-family:var(--font-mono); }
 .sector-chevron{ color: var(--ink-faint); flex-shrink:0; }
 .sector-chevron svg{ width:18px; height:18px; }
 
@@ -551,6 +560,14 @@ input,textarea{ font-family:inherit; }
   background: var(--surface); border-radius: var(--radius-lg);
   padding: 14px 16px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
   display:flex; align-items:center; gap:12px; cursor:pointer;
+}
+.settings-sector-card{
+  position:relative;
+  padding: 16px 18px 16px 22px;
+}
+.settings-sector-card::before{
+  content:""; position:absolute; left:8px; top:14px; bottom:14px; width:4px;
+  border-radius: var(--radius-pill); background: var(--ink); opacity:.85;
 }
 .settings-sector-card .sector-body{ flex:1; }
 .settings-question-card{ cursor:default; align-items:flex-start; }
