@@ -5,12 +5,30 @@ import { exportRondaToExcel } from "./export.js";
 /* ============================================================
    Estado global
 ============================================================ */
+const CHECKLIST_LABELS = {
+  daily: {
+    menuSub: "Comece o checklist diário",
+    screenTitle: "Checklist diário",
+    inProgress: "Em andamento · toque para continuar",
+    done: "Concluído hoje · toque para editar"
+  },
+  weekly: {
+    menuSub: "Comece o checklist semanal",
+    screenTitle: "Checklist semanal",
+    inProgress: "Em andamento · toque para continuar",
+    done: "Concluído nesta semana · toque para editar"
+  }
+};
+
 const state = {
   sectors: [],
   currentRonda: null,
+  checklistType: null,               // "daily" | "weekly"
+  periodRondas: { daily: null, weekly: null },
   activeSectorId: null,
   historyItems: [],
   settingsSectorId: null,
+  settingsQuestionType: "weekly",    // aba ativa na tela de perguntas das configurações
   editingQuestionId: null,
   pendenciaCtx: null,      // { sectorId, questionId, questionText, editingId }
   selectedPriority: null,
@@ -109,6 +127,22 @@ function markDirtyCheck() {
   state.isDirty = snapshotRondaState(state.currentRonda) !== state.editSnapshot;
 }
 
+function getSectorQuestions(sector, type) {
+  return (type === "daily" ? sector.dailyQuestions : sector.questions) || [];
+}
+
+function fmtWeekLabel(dateLike) {
+  if (!dateLike) return "";
+  const d = dateLike.toDate ? dateLike.toDate() : new Date(dateLike);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const fmt = (x) => x.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  return `Semana de ${fmt(start)} a ${fmt(end)}`;
+}
+
 function requireDb() {
   if (!isFirebaseConfigured) {
     showToast("Configure o Firebase em js/firebase-init.js");
@@ -137,30 +171,28 @@ function closeConfirm() {
    HOME
 ============================================================ */
 async function initHome() {
-  const card = $("#home-resume-card");
-  if (!isFirebaseConfigured) { card.classList.add("hidden"); return; }
+  if (!isFirebaseConfigured) return;
   try {
-    const today = await store.getTodayRonda();
-    if (today && today.status === "in_progress") {
-      state.currentRonda = today;
-      card.querySelector(".resume-title").textContent = "Ronda em andamento";
-      $("#resume-icon-wrap").innerHTML = '<i data-lucide="play-circle"></i>';
-      $("#resume-sub-text").textContent = `Iniciada às ${fmtTime(today.startedAt)}`;
-      card.classList.remove("hidden");
-    } else if (today && today.status === "completed") {
-      state.currentRonda = today;
-      card.querySelector(".resume-title").textContent = "Ronda de hoje concluída";
-      $("#resume-icon-wrap").innerHTML = '<i data-lucide="check-circle-2"></i>';
-      $("#resume-sub-text").textContent = `Pontuação ${today.score ?? 0}% · toque para editar`;
-      card.classList.remove("hidden");
-    } else {
-      state.currentRonda = null;
-      card.classList.add("hidden");
-    }
+    const [daily, weekly] = await Promise.all([
+      store.getPeriodRonda("daily"),
+      store.getPeriodRonda("weekly")
+    ]);
+    state.periodRondas = { daily, weekly };
+    updateChecklistCardStatus("daily", daily);
+    updateChecklistCardStatus("weekly", weekly);
     refreshIcons();
   } catch (e) {
     console.error(e);
   }
+}
+
+function updateChecklistCardStatus(type, ronda) {
+  const sub = document.querySelector(`#btn-start-${type} .menu-card-sub`);
+  if (!sub) return;
+  const labels = CHECKLIST_LABELS[type];
+  if (!ronda) sub.textContent = labels.menuSub;
+  else if (ronda.status === "in_progress") sub.textContent = labels.inProgress;
+  else sub.textContent = labels.done;
 }
 
 async function loadSectors() {
@@ -171,74 +203,39 @@ async function ensureSectorsLoaded() {
   if (!state.sectors.length) await loadSectors();
 }
 
-// Botão "Iniciar ronda": só cria uma ronda nova. Se já existe uma ronda
-// hoje (em andamento ou finalizada), avisa com destaque em vez de abrir
-// silenciosamente — evita a sensação de botão "bugado".
-async function startNewRondaFlow() {
+// Abre o checklist do tipo informado ("daily" ou "weekly"): retoma o que já
+// estiver em andamento, reabre para edição o que já tiver sido concluído
+// no período atual (dia ou semana), ou cria um novo quando não houver nenhum.
+let checklistOpenInFlight = false;
+async function openChecklistFlow(type) {
   if (!requireDb()) return;
+  if (checklistOpenInFlight) return;
+  checklistOpenInFlight = true;
+  const btn = $(`#btn-start-${type}`);
+  if (btn) btn.classList.add("is-loading");
   try {
     await ensureSectorsLoaded();
-    if (!state.sectors.some(s => (s.questions || []).length > 0)) {
-      showToast("Cadastre perguntas nos setores em Configurações antes de iniciar.");
+    if (!state.sectors.some(s => getSectorQuestions(s, type).length > 0)) {
+      showToast(`Cadastre perguntas ${type === "daily" ? "diárias" : "semanais"} nos setores em Configurações antes de iniciar.`);
       return;
     }
 
-    const today = await store.getTodayRonda();
-    if (today) {
-      state.currentRonda = today;
-      shakeElement($("#btn-start-ronda"));
-      showToast(
-        today.status === "completed"
-          ? "A ronda de hoje já foi finalizada. Toque no card abaixo para editar."
-          : "Já existe uma ronda em andamento hoje. Toque no card abaixo para continuar.",
-        3600,
-        "error"
-      );
-      return;
-    }
+    let ronda = state.periodRondas[type] || await store.getPeriodRonda(type);
+    if (!ronda) ronda = await store.createRonda(state.sectors, type);
 
-    state.currentRonda = await store.createRonda(state.sectors);
-    state.editingCompletedRonda = false;
-    renderRondaSectors();
-    showScreen("screen-ronda-sectors");
-  } catch (e) {
-    console.error(e);
-    showToast("Não foi possível iniciar a ronda.");
-  }
-}
-
-// Botão do card "Ronda de hoje": continua ou reabre para edição a ronda
-// que já existe hoje. Reaproveita o que a Home já carregou (evita uma
-// nova ida ao Firestore) e trava contra toques repetidos, que antes
-// deixavam o card parecendo travado/lento.
-let resumeInFlight = false;
-async function resumeTodayRonda() {
-  if (!requireDb()) return;
-  if (resumeInFlight) return;
-  resumeInFlight = true;
-  const card = $("#home-resume-card");
-  card.classList.add("is-loading");
-  try {
-    await ensureSectorsLoaded();
-    let today = state.currentRonda;
-    if (!today) today = await store.getTodayRonda();
-    if (!today) {
-      showToast("Nenhuma ronda em andamento hoje.");
-      initHome();
-      return;
-    }
-    state.currentRonda = today;
-    state.editingCompletedRonda = today.status === "completed";
-    state.editSnapshot = state.editingCompletedRonda ? snapshotRondaState(today) : null;
+    state.currentRonda = ronda;
+    state.checklistType = type;
+    state.editingCompletedRonda = ronda.status === "completed";
+    state.editSnapshot = state.editingCompletedRonda ? snapshotRondaState(ronda) : null;
     state.isDirty = false;
     renderRondaSectors();
     showScreen("screen-ronda-sectors");
   } catch (e) {
     console.error(e);
-    showToast("Não foi possível abrir a ronda.");
+    showToast("Não foi possível abrir o checklist.");
   } finally {
-    resumeInFlight = false;
-    card.classList.remove("is-loading");
+    checklistOpenInFlight = false;
+    if (btn) btn.classList.remove("is-loading");
   }
 }
 
@@ -262,7 +259,9 @@ function computeRondaTotals() {
 
 function renderRondaSectors() {
   const ronda = state.currentRonda;
-  $("#ronda-date-label").textContent = fmtDateLabel(ronda.startedAt);
+  const type = state.checklistType;
+  $("#ronda-screen-title").textContent = CHECKLIST_LABELS[type].screenTitle;
+  $("#ronda-date-label").textContent = type === "daily" ? fmtDateLabel(ronda.startedAt) : fmtWeekLabel(ronda.startedAt);
 
   const totals = computeRondaTotals();
   const percent = totals.totalQuestions ? Math.round((totals.answered / totals.totalQuestions) * 100) : 0;
@@ -275,8 +274,8 @@ function renderRondaSectors() {
   const list = $("#sector-list");
   list.innerHTML = "";
   state.sectors.forEach(sector => {
-    const sd = ronda.sectorsData[sector.id] || { completed: false, answers: {}, totalQuestions: (sector.questions || []).length };
-    const total = sector.questions ? sector.questions.length : 0;
+    const sd = ronda.sectorsData[sector.id] || { completed: false, answers: {}, totalQuestions: getSectorQuestions(sector, type).length };
+    const total = getSectorQuestions(sector, type).length;
     const answered = Object.keys(sd.answers || {}).length;
     const isEmpty = total === 0;
     const isDone = sd.completed;
@@ -325,7 +324,7 @@ function renderSectorQuestions() {
   const sd = state.currentRonda.sectorsData[sector.id];
   $("#sector-questions-title").textContent = sector.name;
 
-  const questions = sector.questions || [];
+  const questions = getSectorQuestions(sector, state.checklistType);
   const answered = questions.filter(q => sd.answers[q.id] && sd.answers[q.id].status).length;
   $("#sector-questions-progress").textContent = `${answered} de ${questions.length} respondidas`;
   $("#mini-progress-fill").style.width = questions.length ? `${(answered / questions.length) * 100}%` : "0%";
@@ -385,7 +384,7 @@ function renderSectorQuestions() {
 function setAnswer(questionId, status) {
   const sector = state.sectors.find(s => s.id === state.activeSectorId);
   const sd = state.currentRonda.sectorsData[sector.id];
-  const question = sector.questions.find(q => q.id === questionId);
+  const question = getSectorQuestions(sector, state.checklistType).find(q => q.id === questionId);
   sd.answers[questionId] = {
     text: question.text,
     status,
@@ -398,7 +397,7 @@ function setAnswer(questionId, status) {
 function updateFinishSectorButton() {
   const sector = state.sectors.find(s => s.id === state.activeSectorId);
   const sd = state.currentRonda.sectorsData[sector.id];
-  const questions = sector.questions || [];
+  const questions = getSectorQuestions(sector, state.checklistType);
   const allAnswered = questions.length > 0 && questions.every(q => sd.answers[q.id] && sd.answers[q.id].status);
   $("#btn-finish-sector").disabled = !allAnswered;
 }
@@ -626,12 +625,17 @@ function rondaPendStats(ronda) {
   return { total: list.length, resolved };
 }
 
+function checklistTypeLabel(ronda) {
+  return (ronda.type || "weekly") === "daily" ? "Diário" : "Semanal";
+}
+
 function historyBadgesHtml(ronda) {
   const sec = rondaSectorStats(ronda);
   const pend = rondaPendStats(ronda);
   const secOk = sec.total > 0 && sec.done === sec.total;
   const pendOk = pend.total === 0 || pend.resolved === pend.total;
   return `
+    <span class="hist-badge"><i data-lucide="${(ronda.type || "weekly") === "daily" ? "sun" : "calendar-days"}"></i>${checklistTypeLabel(ronda)}</span>
     <span class="hist-badge ${secOk ? "is-ok" : ""}"><i data-lucide="layers"></i>${sec.done}/${sec.total} setores</span>
     <span class="hist-badge ${pendOk ? "is-ok" : "is-warn"}"><i data-lucide="${pend.total === 0 ? "check-circle-2" : "flag"}"></i>${pend.total === 0 ? "Sem pendências" : `${pend.resolved}/${pend.total} resolvidas`}</span>
   `;
@@ -675,6 +679,7 @@ async function startEditHistoryRonda(ronda) {
   try {
     await ensureSectorsLoaded();
     state.currentRonda = ronda;
+    state.checklistType = ronda.type || "weekly";
     state.editingCompletedRonda = true;
     state.editingFromHistory = true;
     state.editSnapshot = snapshotRondaState(ronda);
@@ -816,14 +821,15 @@ function renderSettingsSectors() {
   const list = $("#settings-sector-list");
   list.innerHTML = "";
   state.sectors.forEach(sector => {
-    const count = (sector.questions || []).length;
+    const weeklyCount = getSectorQuestions(sector, "weekly").length;
+    const dailyCount = getSectorQuestions(sector, "daily").length;
     const card = document.createElement("div");
     card.className = "settings-sector-card";
     card.innerHTML = `
       <div class="sector-status"><i data-lucide="layers"></i></div>
       <div class="sector-body">
         <p class="sector-name">${sector.name}</p>
-        <p class="sector-meta">${count} pergunta${count === 1 ? "" : "s"}</p>
+        <p class="sector-meta">${dailyCount} diária${dailyCount === 1 ? "" : "s"} · ${weeklyCount} semanal${weeklyCount === 1 ? "" : "s"}</p>
       </div>
       <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
     `;
@@ -854,16 +860,19 @@ async function addSectorFlow() {
 
 function openSettingsQuestions(sectorId) {
   state.settingsSectorId = sectorId;
+  state.settingsQuestionType = "weekly";
+  $all("#settings-question-type-toggle .filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.qtype === "weekly"));
   renderSettingsQuestions();
   showScreen("screen-settings-questions");
 }
 
 function renderSettingsQuestions() {
   const sector = state.sectors.find(s => s.id === state.settingsSectorId);
+  const type = state.settingsQuestionType;
   $("#settings-sector-title").textContent = sector.name;
   const list = $("#settings-question-list");
   list.innerHTML = "";
-  const questions = sector.questions || [];
+  const questions = getSectorQuestions(sector, type);
   $("#settings-question-empty").classList.toggle("hidden", questions.length > 0);
 
   questions.forEach(q => {
@@ -881,7 +890,7 @@ function renderSettingsQuestions() {
         if (!newText) return;
         showLoading(true);
         try {
-          await store.updateQuestion(sector.id, q.id, newText);
+          await store.updateQuestion(sector.id, q.id, newText, type);
           await loadSectors();
           state.editingQuestionId = null;
           renderSettingsQuestions();
@@ -903,7 +912,7 @@ function renderSettingsQuestions() {
         openConfirm("Remover pergunta", "Esta pergunta será removida do setor.", async () => {
           showLoading(true);
           try {
-            await store.deleteQuestion(sector.id, q.id);
+            await store.deleteQuestion(sector.id, q.id, type);
             await loadSectors();
             renderSettingsQuestions();
             showToast("Pergunta removida.");
@@ -922,7 +931,7 @@ async function addQuestionFlow() {
   if (!text) return;
   showLoading(true);
   try {
-    await store.addQuestion(state.settingsSectorId, text);
+    await store.addQuestion(state.settingsSectorId, text, state.settingsQuestionType);
     input.value = "";
     await loadSectors();
     renderSettingsQuestions();
@@ -962,6 +971,7 @@ function wireEvents() {
         state.editingCompletedRonda = false;
         state.editSnapshot = null;
         state.isDirty = false;
+        state.checklistType = null;
         initHome();
       }
       if (target === "screen-history") {
@@ -975,8 +985,8 @@ function wireEvents() {
     });
   });
 
-  $("#btn-start-ronda").addEventListener("click", startNewRondaFlow);
-  $("#home-resume-card").addEventListener("click", resumeTodayRonda);
+  $("#btn-start-daily").addEventListener("click", () => openChecklistFlow("daily"));
+  $("#btn-start-weekly").addEventListener("click", () => openChecklistFlow("weekly"));
   $("#btn-history").addEventListener("click", () => {
     state.historyRange = "all";
     $all(".filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.range === "all"));
@@ -993,6 +1003,7 @@ function wireEvents() {
   $("#btn-finish-summary").addEventListener("click", () => {
     const returnToHistory = state.editingFromHistory;
     state.currentRonda = null;
+    state.checklistType = null;
     state.editingCompletedRonda = false;
     state.editingFromHistory = false;
     state.editSnapshot = null;
@@ -1065,6 +1076,15 @@ function wireEvents() {
   $("#input-new-sector").addEventListener("keydown", e => { if (e.key === "Enter") addSectorFlow(); });
   $("#btn-add-question").addEventListener("click", addQuestionFlow);
   $("#btn-delete-sector").addEventListener("click", deleteSectorFlow);
+
+  $all("#settings-question-type-toggle .filter-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      state.settingsQuestionType = chip.dataset.qtype;
+      $all("#settings-question-type-toggle .filter-chip").forEach(c => c.classList.toggle("is-selected", c === chip));
+      state.editingQuestionId = null;
+      renderSettingsQuestions();
+    });
+  });
 }
 
 /* ============================================================
