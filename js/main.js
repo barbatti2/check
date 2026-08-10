@@ -25,6 +25,7 @@ const state = {
   currentRonda: null,
   checklistType: null,               // "daily" | "weekly"
   periodRondas: { daily: null, weekly: null },
+  periodRondasLoaded: false,         // true assim que a Home já buscou os checklists do período
   activeSectorId: null,
   historyItems: [],
   settingsSectorId: null,
@@ -187,6 +188,7 @@ async function initHome() {
       store.getPeriodRonda("weekly")
     ]);
     state.periodRondas = { daily, weekly };
+    state.periodRondasLoaded = true;
     updateChecklistCardStatus("daily", daily);
     updateChecklistCardStatus("weekly", weekly);
     refreshIcons();
@@ -229,7 +231,10 @@ async function openChecklistFlow(type) {
       return;
     }
 
-    let ronda = state.periodRondas[type] || await store.getPeriodRonda(type);
+    // A Home já buscou o checklist do período (inclusive quando é "nenhum
+    // ainda") — reaproveita esse resultado em vez de refazer a consulta ao
+    // Firestore, que era a causa do delay ao clicar para iniciar.
+    let ronda = state.periodRondasLoaded ? state.periodRondas[type] : await store.getPeriodRonda(type);
     if (!ronda) ronda = await store.createRonda(state.sectors, type);
 
     state.currentRonda = ronda;
@@ -478,7 +483,7 @@ function openPendenciaModal(sector, question) {
 
   $("#pendencia-question-ref").textContent = `${sector.name} · ${question.text}`;
   $("#pendencia-descricao").value = existing ? existing.descricao : "";
-  $("#pendencia-responsavel").value = existing ? existing.responsavel : "";
+  $("#pendencia-responsavel").value = existing ? existing.responsavel : (sector.responsavel || "");
   $("#pendencia-prazo").value = existing ? existing.prazo : "";
   state.selectedPriority = existing ? existing.prioridade : null;
   $all("#pendencia-prioridade .priority-chip").forEach(chip => {
@@ -878,7 +883,7 @@ function renderSettingsSectors() {
       <div class="sector-status"><i data-lucide="layers"></i></div>
       <div class="sector-body">
         <p class="sector-name">${sector.name}</p>
-        <p class="sector-meta">${dailyCount} diária${dailyCount === 1 ? "" : "s"} · ${weeklyCount} semanal${weeklyCount === 1 ? "" : "s"}</p>
+        <p class="sector-meta">${dailyCount} diária${dailyCount === 1 ? "" : "s"} · ${weeklyCount} semanal${weeklyCount === 1 ? "" : "s"}${sector.responsavel ? ` · Responsável: ${sector.responsavel}` : ""}</p>
       </div>
       <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
     `;
@@ -911,8 +916,25 @@ function openSettingsQuestions(sectorId) {
   state.settingsSectorId = sectorId;
   state.settingsQuestionType = "weekly";
   $all("#settings-question-type-toggle .filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.qtype === "weekly"));
+  const sector = state.sectors.find(s => s.id === sectorId);
+  $("#input-sector-responsavel").value = (sector && sector.responsavel) || "";
   renderSettingsQuestions();
   showScreen("screen-settings-questions");
+}
+
+async function saveSectorResponsavelFlow() {
+  const sector = state.sectors.find(s => s.id === state.settingsSectorId);
+  if (!sector) return;
+  const value = $("#input-sector-responsavel").value.trim();
+  if (value === (sector.responsavel || "")) return;
+  try {
+    await store.updateSectorResponsavel(sector.id, value);
+    sector.responsavel = value;
+    showToast("Responsável atualizado.");
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao salvar responsável.");
+  }
 }
 
 function renderSettingsQuestions() {
@@ -1126,6 +1148,10 @@ function wireEvents() {
   $("#input-new-sector").addEventListener("keydown", e => { if (e.key === "Enter") addSectorFlow(); });
   $("#btn-add-question").addEventListener("click", addQuestionFlow);
   $("#btn-delete-sector").addEventListener("click", deleteSectorFlow);
+  $("#input-sector-responsavel").addEventListener("blur", saveSectorResponsavelFlow);
+  $("#input-sector-responsavel").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); $("#input-sector-responsavel").blur(); }
+  });
 
   $all("#settings-question-type-toggle .filter-chip").forEach(chip => {
     chip.addEventListener("click", () => {
@@ -1138,11 +1164,50 @@ function wireEvents() {
 }
 
 /* ============================================================
+   Gesto de voltar (arrastar da borda esquerda), estilo iOS
+============================================================ */
+function initEdgeSwipeBack() {
+  const EDGE_ZONE = 24;   // faixa sensível a partir da borda esquerda da tela
+  const THRESHOLD = 70;   // distância mínima de arrasto para considerar "voltar"
+  let startX = null, startY = null, tracking = false;
+
+  document.addEventListener("touchstart", (e) => {
+    const t = e.touches[0];
+    tracking = t.clientX <= EDGE_ZONE;
+    startX = t.clientX;
+    startY = t.clientY;
+  }, { passive: true });
+
+  document.addEventListener("touchend", (e) => {
+    if (!tracking || startX === null) { tracking = false; return; }
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = Math.abs(t.clientY - startY);
+    tracking = false;
+    if (dx > THRESHOLD && dy < 60) triggerBackGesture();
+  }, { passive: true });
+}
+
+function triggerBackGesture() {
+  // Se houver um modal aberto, o gesto fecha ele primeiro.
+  const openModal = document.querySelector(".modal-overlay:not(.hidden)");
+  if (openModal) {
+    openModal.classList.add("hidden");
+    return;
+  }
+  // Caso contrário, aciona o mesmo botão de voltar do topo da tela atual.
+  const activeScreen = document.querySelector(".screen.is-active");
+  const backBtn = activeScreen && activeScreen.querySelector(".topbar [data-nav]");
+  if (backBtn) backBtn.click();
+}
+
+/* ============================================================
    Init
 ============================================================ */
 async function init() {
   refreshIcons();
   wireEvents();
+  initEdgeSwipeBack();
 
   if (!isFirebaseConfigured) {
     showToast("Configure suas credenciais em js/firebase-init.js", 5000);

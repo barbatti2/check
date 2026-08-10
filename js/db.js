@@ -103,6 +103,10 @@ export async function updateSectorName(sectorId, name) {
   await updateDoc(doc(db, "sectors", sectorId), { name });
 }
 
+export async function updateSectorResponsavel(sectorId, responsavel) {
+  await updateDoc(doc(db, "sectors", sectorId), { responsavel });
+}
+
 export async function deleteSector(sectorId) {
   await deleteDoc(doc(db, "sectors", sectorId));
 }
