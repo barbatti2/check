@@ -917,24 +917,46 @@ function openSettingsQuestions(sectorId) {
   state.settingsQuestionType = "weekly";
   $all("#settings-question-type-toggle .filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.qtype === "weekly"));
   const sector = state.sectors.find(s => s.id === sectorId);
-  $("#input-sector-responsavel").value = (sector && sector.responsavel) || "";
+  renderResponsavelBlock(sector);
   renderSettingsQuestions();
   showScreen("screen-settings-questions");
+}
+
+// Mostra o responsável como card (toque para editar). Sai do modo edição
+// e volta a exibir só o card com o nome, tanto ao salvar quanto ao abrir.
+function renderResponsavelBlock(sector) {
+  const name = (sector && sector.responsavel) || "";
+  $("#responsavel-name-text").textContent = name || "Toque para definir";
+  $("#responsavel-name-text").classList.toggle("is-empty", !name);
+  $("#responsavel-display").classList.remove("hidden");
+  $("#responsavel-edit").classList.add("hidden");
+}
+
+function openResponsavelEdit() {
+  const sector = state.sectors.find(s => s.id === state.settingsSectorId);
+  $("#input-sector-responsavel").value = (sector && sector.responsavel) || "";
+  $("#responsavel-display").classList.add("hidden");
+  $("#responsavel-edit").classList.remove("hidden");
+  const input = $("#input-sector-responsavel");
+  input.focus();
+  input.select();
 }
 
 async function saveSectorResponsavelFlow() {
   const sector = state.sectors.find(s => s.id === state.settingsSectorId);
   if (!sector) return;
   const value = $("#input-sector-responsavel").value.trim();
-  if (value === (sector.responsavel || "")) return;
-  try {
-    await store.updateSectorResponsavel(sector.id, value);
-    sector.responsavel = value;
-    showToast("Responsável atualizado.");
-  } catch (e) {
-    console.error(e);
-    showToast("Erro ao salvar responsável.");
+  if (value !== (sector.responsavel || "")) {
+    try {
+      await store.updateSectorResponsavel(sector.id, value);
+      sector.responsavel = value;
+      showToast("Responsável atualizado.");
+    } catch (e) {
+      console.error(e);
+      showToast("Erro ao salvar responsável.");
+    }
   }
+  renderResponsavelBlock(sector);
 }
 
 function renderSettingsQuestions() {
@@ -1152,6 +1174,7 @@ function wireEvents() {
   $("#input-sector-responsavel").addEventListener("keydown", e => {
     if (e.key === "Enter") { e.preventDefault(); $("#input-sector-responsavel").blur(); }
   });
+  $("#responsavel-display").addEventListener("click", openResponsavelEdit);
 
   $all("#settings-question-type-toggle .filter-chip").forEach(chip => {
     chip.addEventListener("click", () => {
