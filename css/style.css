@@ -86,10 +86,12 @@ body{
   .screen{
     max-width: var(--app-max);
     margin: 0 auto;
-    min-height: 92vh;
+    height: 92vh;
     border-radius: 32px;
     box-shadow: var(--shadow-lg);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     border: 1px solid var(--line-soft);
   }
   .toast{ max-width: calc(var(--app-max) - 40px); }
