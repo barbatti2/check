@@ -29,7 +29,7 @@
     <div class="home-banner">
       <div class="home-banner-hero">
         <h1 class="home-title">Checklist</h1>
-        <p class="eyebrow">Ronda diária</p>
+        <p class="eyebrow">Diário e semanal</p>
         <span class="home-title-underline"></span>
       </div>
       <div class="home-banner-steps">
@@ -48,11 +48,20 @@
 
     <div class="home-actions-panel">
       <div class="home-actions">
-        <button id="btn-start-ronda" class="menu-card menu-card--primary">
-          <span class="menu-card-icon"><i data-lucide="play-circle"></i></span>
+        <button id="btn-start-daily" class="menu-card menu-card--primary">
+          <span class="menu-card-icon"><i data-lucide="sun"></i></span>
           <span class="menu-card-text">
-            <span class="menu-card-title">Iniciar ronda</span>
-            <span class="menu-card-sub">Comece uma nova ronda agora</span>
+            <span class="menu-card-title">Checklist Diário</span>
+            <span class="menu-card-sub">Comece o checklist diário</span>
+          </span>
+          <span class="menu-card-chevron"><i data-lucide="chevron-right"></i></span>
+        </button>
+
+        <button id="btn-start-weekly" class="menu-card menu-card--primary">
+          <span class="menu-card-icon"><i data-lucide="calendar-days"></i></span>
+          <span class="menu-card-text">
+            <span class="menu-card-title">Checklist Semanal</span>
+            <span class="menu-card-sub">Comece o checklist semanal</span>
           </span>
           <span class="menu-card-chevron"><i data-lucide="chevron-right"></i></span>
         </button>
@@ -60,8 +69,8 @@
         <button id="btn-history" class="menu-card">
           <span class="menu-card-icon"><i data-lucide="history"></i></span>
           <span class="menu-card-text">
-            <span class="menu-card-title">Histórico de rondas</span>
-            <span class="menu-card-sub">Veja todas as rondas realizadas</span>
+            <span class="menu-card-title">Histórico</span>
+            <span class="menu-card-sub">Veja todos os checklists realizados</span>
           </span>
           <span class="menu-card-chevron"><i data-lucide="chevron-right"></i></span>
         </button>
@@ -76,17 +85,6 @@
         </button>
       </div>
     </div>
-
-    <div id="home-resume-card" class="resume-card hidden">
-      <div class="resume-info">
-        <span id="resume-icon-wrap"><i data-lucide="play-circle"></i></span>
-        <div>
-          <p class="resume-title">Ronda em andamento</p>
-          <p class="resume-sub" id="resume-sub-text">Continue de onde parou</p>
-        </div>
-      </div>
-      <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
-    </div>
   </div>
 </main>
 
@@ -95,7 +93,7 @@
   <header class="topbar">
     <button class="icon-btn" data-nav="screen-home"><i data-lucide="chevron-left"></i></button>
     <div class="topbar-title">
-      <h2>Ronda de hoje</h2>
+      <h2 id="ronda-screen-title">Checklist</h2>
       <p id="ronda-date-label" class="topbar-sub"></p>
     </div>
     <span class="topbar-spacer"></span>
@@ -285,6 +283,13 @@
     </div>
     <button class="icon-btn" id="btn-delete-sector"><i data-lucide="trash-2"></i></button>
   </header>
+
+  <section class="section-block">
+    <div class="filter-chips" id="settings-question-type-toggle">
+      <button type="button" class="filter-chip is-selected" data-qtype="weekly">Semanal</button>
+      <button type="button" class="filter-chip" data-qtype="daily">Diário</button>
+    </div>
+  </section>
 
   <section class="section-block">
     <div id="settings-question-list" class="card-list"></div>
