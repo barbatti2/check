@@ -17,37 +17,7 @@ export const DEFAULT_SECTORS = [
   "Camas",
   "Tapetes Higiênicos",
   "Granulados",
-  "Aves, Roedores e Peixes",
-  "Brinquedos"
-];
-
-// Perguntas padrão que devem ser exatamente as mesmas em todos os setores
-// de STANDARD_QUESTION_SECTORS (ver syncStandardSectors).
-export const STANDARD_QUESTIONS = [
-  "Prateleiras em perfeitas condições?",
-  "Porta etiquetas em perfeita condições, sem réguas promocionais e sem \"cola\"?",
-  "Todos os itens estão precificados?",
-  "O controle de validade (FIFO) é realizado durante a reposição de produtos? (FISCALIZAR)",
-  "Produtos próximos dos vencimentos (4 meses) foram identificados, registrados e destacados no ponto de venda?",
-  "O setor está devidamente abastecido? Há produto para ser abastecido e não está no ponto de venda?",
-  "O setor está com LAYOUT adequado?",
-  "Os corredores estão desobstruídos?",
-  "O aéreo está abastecido e identificado com cartaz ou etiqueta de preço?"
-];
-
-export const STANDARD_QUESTION_SECTORS = [
-  "Cães Pet Food",
-  "Cães Snacks",
-  "Gatos Pet Food",
-  "Gatos Snacks",
-  "Aves, Roedores e Peixes",
-  "Higiene e Beleza",
-  "Tapetes Higiênicos",
-  "Granulados",
-  "Acessórios",
-  "Brinquedos",
-  "Camas",
-  "Farmácia"
+  "Aves, Roedores e Peixes"
 ];
 
 function uid() {
@@ -70,39 +40,6 @@ export async function ensureDefaultSectors() {
     const ref = doc(collection(db, "sectors"));
     batch.set(ref, { name, order: i, questions: [] });
   });
-  await batch.commit();
-}
-
-// Garante que os setores de STANDARD_QUESTION_SECTORS existam e estejam
-// todos com exatamente as mesmas STANDARD_QUESTIONS. Roda apenas uma vez
-// (marca em meta/std_sectors_v1) para não sobrescrever edições futuras
-// feitas pelo usuário em Configurações.
-export async function syncStandardSectors() {
-  const metaRef = doc(db, "meta", "std_sectors_v1");
-  const metaSnap = await getDoc(metaRef);
-  if (metaSnap.exists()) return;
-
-  const snap = await getDocs(collection(db, "sectors"));
-  const existing = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const norm = (s) => s.trim().toLowerCase();
-
-  const batch = writeBatch(db);
-  let nextOrder = existing.reduce((max, s) => Math.max(max, s.order ?? 0), -1) + 1;
-
-  STANDARD_QUESTION_SECTORS.forEach(name => {
-    const match = existing.find(s => norm(s.name) === norm(name));
-    // Cada setor recebe sua própria cópia dos ids das perguntas (mesmo
-    // texto, "exatamente iguais", mas ids independentes por setor).
-    const questions = STANDARD_QUESTIONS.map(text => ({ id: uid(), text }));
-    if (match) {
-      batch.update(doc(db, "sectors", match.id), { questions });
-    } else {
-      const ref = doc(collection(db, "sectors"));
-      batch.set(ref, { name, order: nextOrder++, questions });
-    }
-  });
-
-  batch.set(metaRef, { appliedAt: serverTimestamp() });
   await batch.commit();
 }
 
@@ -212,13 +149,14 @@ export async function finishRonda(rondaId, { score, conformCount, nonConformCoun
 // Retorna a ronda de hoje, esteja ela em andamento ou já concluída
 // (usado para permitir apenas 1 ronda por dia, com opção de editar).
 export async function getTodayRonda() {
-  const inProgress = await getInProgressRonda();
+  const [inProgress, completedSnap] = await Promise.all([
+    getInProgressRonda(),
+    getDocs(query(collection(db, "rondas"), where("status", "==", "completed")))
+  ]);
   if (inProgress && isSameDay(inProgress.startedAt)) return inProgress;
 
-  const q = query(collection(db, "rondas"), where("status", "==", "completed"));
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (completedSnap.empty) return null;
+  const items = completedSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   items.sort((a, b) => (b.startedAt?.toMillis?.() || 0) - (a.startedAt?.toMillis?.() || 0));
   const last = items[0];
   return last && isSameDay(last.startedAt) ? last : null;
