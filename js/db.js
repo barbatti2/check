@@ -156,10 +156,16 @@ export async function createRonda(sectors, type = "weekly") {
   const field = questionsField(type);
   const sectorsData = {};
   sectors.forEach(s => {
+    // Congela as perguntas do setor no momento da criação: assim, se as
+    // perguntas forem editadas/excluídas depois nas Configurações, o
+    // checklist já em andamento não fica com dados incompatíveis (ids
+    // "órfãos") que travavam a tela de setores.
+    const questions = (s[field] || []).map(q => ({ id: q.id, text: q.text }));
     sectorsData[s.id] = {
       name: s.name,
       completed: false,
-      totalQuestions: (s[field] || []).length,
+      totalQuestions: questions.length,
+      questions,
       answers: {}
     };
   });

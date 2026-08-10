@@ -131,6 +131,15 @@ function getSectorQuestions(sector, type) {
   return (type === "daily" ? sector.dailyQuestions : sector.questions) || [];
 }
 
+// Perguntas efetivas de um setor DENTRO de um checklist já criado: usa a
+// lista congelada em sd.questions (checklists novos) e, se não existir
+// (checklists antigos, criados antes desta trava), cai para a lista viva
+// do setor — mantém compatibilidade sem quebrar dados existentes.
+function getRondaSectorQuestions(sector, sd, type) {
+  if (sd && Array.isArray(sd.questions)) return sd.questions;
+  return getSectorQuestions(sector, type);
+}
+
 function fmtWeekLabel(dateLike) {
   if (!dateLike) return "";
   const d = dateLike.toDate ? dateLike.toDate() : new Date(dateLike);
@@ -275,7 +284,7 @@ function renderRondaSectors() {
   list.innerHTML = "";
   state.sectors.forEach(sector => {
     const sd = ronda.sectorsData[sector.id] || { completed: false, answers: {}, totalQuestions: getSectorQuestions(sector, type).length };
-    const total = getSectorQuestions(sector, type).length;
+    const total = getRondaSectorQuestions(sector, sd, type).length;
     const answered = Object.keys(sd.answers || {}).length;
     const isEmpty = total === 0;
     const isDone = sd.completed;
@@ -324,7 +333,7 @@ function renderSectorQuestions() {
   const sd = state.currentRonda.sectorsData[sector.id];
   $("#sector-questions-title").textContent = sector.name;
 
-  const questions = getSectorQuestions(sector, state.checklistType);
+  const questions = getRondaSectorQuestions(sector, sd, state.checklistType);
   const answered = questions.filter(q => sd.answers[q.id] && sd.answers[q.id].status).length;
   $("#sector-questions-progress").textContent = `${answered} de ${questions.length} respondidas`;
   $("#mini-progress-fill").style.width = questions.length ? `${(answered / questions.length) * 100}%` : "0%";
@@ -384,7 +393,7 @@ function renderSectorQuestions() {
 function setAnswer(questionId, status) {
   const sector = state.sectors.find(s => s.id === state.activeSectorId);
   const sd = state.currentRonda.sectorsData[sector.id];
-  const question = getSectorQuestions(sector, state.checklistType).find(q => q.id === questionId);
+  const question = getRondaSectorQuestions(sector, sd, state.checklistType).find(q => q.id === questionId);
   sd.answers[questionId] = {
     text: question.text,
     status,
@@ -397,9 +406,49 @@ function setAnswer(questionId, status) {
 function updateFinishSectorButton() {
   const sector = state.sectors.find(s => s.id === state.activeSectorId);
   const sd = state.currentRonda.sectorsData[sector.id];
-  const questions = getSectorQuestions(sector, state.checklistType);
+  const questions = getRondaSectorQuestions(sector, sd, state.checklistType);
   const allAnswered = questions.length > 0 && questions.every(q => sd.answers[q.id] && sd.answers[q.id].status);
   $("#btn-finish-sector").disabled = !allAnswered;
+}
+
+// Permite excluir o checklist atual (em andamento ou já concluído) direto
+// da tela de setores — útil para descartar um checklist iniciado por engano
+// ou que ficou com dados inconsistentes após mudanças nas perguntas.
+function deleteCurrentRondaFlow() {
+  const ronda = state.currentRonda;
+  if (!ronda) return;
+  const label = CHECKLIST_LABELS[state.checklistType]?.screenTitle || "checklist";
+  openConfirm(
+    "Excluir checklist",
+    `Este ${label.toLowerCase()} e todo o progresso registrado nele serão excluídos permanentemente.`,
+    async () => {
+      showLoading(true);
+      try {
+        await store.deleteRonda(ronda.id);
+        const returnToHistory = state.editingFromHistory;
+        state.currentRonda = null;
+        state.checklistType = null;
+        state.editingCompletedRonda = false;
+        state.editingFromHistory = false;
+        state.editSnapshot = null;
+        state.isDirty = false;
+        showToast("Checklist excluído.");
+        if (returnToHistory) {
+          await loadHistory();
+          showScreen("screen-history");
+        } else {
+          await initHome();
+          showScreen("screen-home");
+        }
+      } catch (e) {
+        console.error(e);
+        showToast("Erro ao excluir checklist.");
+      } finally {
+        showLoading(false);
+      }
+    },
+    { confirmLabel: "Excluir", danger: true }
+  );
 }
 
 async function finishSector() {
@@ -1000,6 +1049,7 @@ function wireEvents() {
 
   $("#btn-finish-sector").addEventListener("click", finishSector);
   $("#btn-finish-ronda").addEventListener("click", finishRondaFlow);
+  $("#btn-delete-ronda").addEventListener("click", deleteCurrentRondaFlow);
   $("#btn-finish-summary").addEventListener("click", () => {
     const returnToHistory = state.editingFromHistory;
     state.currentRonda = null;
