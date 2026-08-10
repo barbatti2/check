@@ -626,6 +626,23 @@ input,textarea{ font-family:inherit; }
   padding:12px 14px; font-size:14.5px; color: var(--ink); background: var(--surface-2); resize:none;
 }
 .field input:focus, .field textarea:focus{ outline:none; border-color: var(--accent); background: var(--surface); }
+.field--center label{ text-align:center; }
+.field--center input{ text-align:center; }
+
+/* Responsável pelo setor: card centralizado, toque para editar */
+.responsavel-card{
+  background: var(--surface); border-radius: var(--radius-lg);
+  padding: 16px 18px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
+  text-align:center; cursor:pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.responsavel-card:active{ transform: scale(.985); }
+.responsavel-label{
+  margin:0 0 5px; font-size:11px; font-family: var(--font-mono);
+  text-transform:uppercase; letter-spacing:.06em; color: var(--ink-muted);
+}
+.responsavel-name{ margin:0; font-family: var(--font-display); font-weight:700; font-size:17px; color: var(--ink); }
+.responsavel-name.is-empty{ font-family: var(--font-body); font-weight:500; color: var(--ink-faint); }
 
 .priority-group{ display:flex; gap:8px; }
 .priority-chip{
