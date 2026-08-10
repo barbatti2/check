@@ -15,7 +15,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@700;800&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
 
 <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -224,7 +224,6 @@
       <div class="filter-chips" id="history-filter-chips">
         <button type="button" class="filter-chip is-selected" data-range="all">Tudo</button>
         <button type="button" class="filter-chip" data-range="7">7 dias</button>
-        <button type="button" class="filter-chip" data-range="30">30 dias</button>
         <button type="button" class="filter-chip" data-range="month">Este mês</button>
         <button type="button" class="filter-chip filter-chip--icon" data-range="custom">
           <i data-lucide="calendar-range"></i><span>Escolher</span>
@@ -283,6 +282,13 @@
     </div>
     <button class="icon-btn" id="btn-delete-sector"><i data-lucide="trash-2"></i></button>
   </header>
+
+  <section class="section-block">
+    <div class="field">
+      <label for="input-sector-responsavel">Responsável pelo setor</label>
+      <input type="text" id="input-sector-responsavel" placeholder="Nome do responsável" />
+    </div>
+  </section>
 
   <section class="section-block">
     <div class="filter-chips" id="settings-question-type-toggle">
