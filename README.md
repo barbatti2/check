@@ -54,6 +54,16 @@ O app funciona offline para navegação (app shell em cache); os dados de rondas
 4. Finalize cada setor (fica bloqueado após concluído, evitando refazer por engano) e, ao concluir todos, toque em **Ver resultado**.
 5. Exporte para Excel ou apenas conclua e volte à Home. A ronda fica salva no **Histórico**, com filtro por data.
 
+## Resumo por IA (Netlify + Gemini)
+
+Na tela de Resultado (e também no detalhe de um item do Histórico), quando há pendências registradas aparece o botão **"Gerar resumo com IA"**. Ele agrupa todas as pendências por setor e usa o Gemini para reescrever cada uma no padrão "Ação necessária: ...".
+
+Para funcionar, o site precisa estar publicado no **Netlify** (usa a Netlify Function em `netlify/functions/resumir.js`):
+
+1. No painel do Netlify, vá em **Site settings → Environment variables** e adicione `GEMINI_API_KEY` com sua chave da API do Gemini (nunca coloque a chave no código).
+2. Faça o deploy normalmente — o Netlify detecta `netlify.toml` e publica a function automaticamente em `/.netlify/functions/resumir`.
+3. Se o site estiver hospedado em outro lugar (ex: GitHub Pages), o botão vai mostrar erro ao chamar a IA, já que a function só existe no Netlify.
+
 ## Estrutura de arquivos
 
 ```
@@ -61,6 +71,11 @@ pet-ronda/
 ├── index.html
 ├── manifest.json
 ├── sw.js
+├── netlify.toml
+├── package.json
+├── netlify/
+│   └── functions/
+│       └── resumir.js      ← chama a API do Gemini (usa GEMINI_API_KEY)
 ├── css/style.css
 ├── js/
 │   ├── firebase-init.js   ← cole aqui suas credenciais
