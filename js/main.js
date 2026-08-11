@@ -388,7 +388,14 @@ function renderRondaSectors() {
     if (!isEmpty && (!isDone || state.editingCompletedRonda)) {
       card.querySelector(".sector-card-main").addEventListener("click", () => openSectorQuestions(sector.id));
     } else if (isDone) {
-      card.querySelector(".sector-card-main").addEventListener("click", () => showToast("Setor já finalizado nesta ronda."));
+      card.querySelector(".sector-card-main").addEventListener("click", () => {
+        openConfirm(
+          "Setor já finalizado",
+          `"${sector.name}" já foi concluído nesta ronda. Deseja abrir para editar as respostas?`,
+          () => openSectorQuestions(sector.id),
+          { confirmLabel: "Editar" }
+        );
+      });
     }
     const toggle = card.querySelector(".sector-stats-toggle");
     if (toggle) {
