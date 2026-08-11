@@ -100,7 +100,10 @@ body{
 
 h1,h2,h3{ font-family: var(--font-display); font-weight:800; margin:0; color:var(--ink); letter-spacing:-0.01em;}
 
-button{ font-family:inherit; }
+button{
+  font-family:inherit; border:none; background:none; color:inherit;
+  padding:0; margin:0; appearance:none; -webkit-appearance:none; cursor:pointer;
+}
 input,textarea{ font-family:inherit; }
 
 /* ---------------- Screens ---------------- */
@@ -386,8 +389,8 @@ input,textarea{ font-family:inherit; }
 .sector-card.is-done .sector-status{ background: var(--ok-soft); color: var(--ok); }
 .sector-body{ flex:1; min-width:0; }
 .sector-name{ margin:0; font-family: var(--font-display); font-weight:500; font-size:17px; letter-spacing:-0.01em; color: var(--ink); }
-.sector-meta .meta-responsavel{ color: var(--ok-vivid); font-weight:700; }
-.sector-meta{ margin:4px 0 0; font-size:12.5px; color:var(--ink-muted); font-family:var(--font-mono); }
+.sector-meta{ margin:4px 0 0; font-size:13px; color:var(--ink-muted); font-family:var(--font-body); font-weight:500; }
+.meta-responsavel{ margin:3px 0 0; font-size:12.5px; font-family:var(--font-body); color: var(--ok-vivid); font-weight:700; }
 .sector-chevron{ color: var(--ink-faint); flex-shrink:0; }
 .sector-chevron svg{ width:18px; height:18px; }
 
