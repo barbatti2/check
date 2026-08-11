@@ -32,6 +32,7 @@ const state = {
   settingsQuestionType: "weekly",    // aba ativa na tela de perguntas das configurações
   settingsResponsavelFilter: null,   // nome selecionado no filtro por responsável
   reorderMode: false,                // true = tela de setores em modo de reordenar
+  draggingSectorId: null,            // setor sendo arrastado no momento (para renderizar como "fantasma")
   editingQuestionId: null,
   pendenciaCtx: null,      // { sectorId, questionId, questionText, editingId }
   selectedPriority: null,
@@ -863,6 +864,8 @@ async function toggleResolvePendencia(ronda, pendId) {
 ============================================================ */
 async function openSettings() {
   state.reorderMode = false;
+  state.draggingSectorId = null;
+  document.querySelectorAll(".drag-clone").forEach(el => el.remove());
   $("#btn-toggle-reorder").classList.remove("is-active");
   if (!requireDb()) { showScreen("screen-settings"); return; }
   showScreen("screen-settings");
@@ -881,8 +884,11 @@ function renderSettingsSectors() {
   const list = $("#settings-sector-list");
   list.innerHTML = "";
 
+  // No modo de reordenar, a ordem é sempre a lista completa (sem filtro por
+  // responsável) — reordenar um subconjunto filtrado não faria sentido,
+  // já que a posição salva é global entre todos os setores.
   const filterName = state.settingsResponsavelFilter;
-  const sectors = filterName
+  const sectors = (!state.reorderMode && filterName)
     ? state.sectors.filter(s => (s.responsavel || "") === filterName)
     : state.sectors;
 
@@ -892,28 +898,28 @@ function renderSettingsSectors() {
     return;
   }
 
-  sectors.forEach((sector, i) => {
+  sectors.forEach(sector => {
     const weeklyCount = getSectorQuestions(sector, "weekly").length;
     const dailyCount = getSectorQuestions(sector, "daily").length;
     const card = document.createElement("div");
     card.className = "settings-sector-card";
+    card.dataset.sectorId = sector.id;
     if (state.reorderMode) card.classList.add("is-reorder");
+    if (state.draggingSectorId === sector.id) card.classList.add("is-ghost");
     card.innerHTML = `
       <div class="sector-status"><i data-lucide="layers"></i></div>
       <div class="sector-body">
         <p class="sector-name">${sector.name}</p>
         <p class="sector-meta">${dailyCount} diária${dailyCount === 1 ? "" : "s"} · ${weeklyCount} semanal${weeklyCount === 1 ? "" : "s"}${sector.responsavel ? ` · <span class="meta-responsavel">Responsável: ${sector.responsavel}</span>` : ""}</p>
       </div>
-      ${state.reorderMode ? `
-        <div class="reorder-controls">
-          <button type="button" class="icon-btn btn-move-up" ${i === 0 ? "disabled" : ""}><i data-lucide="chevron-up"></i></button>
-          <button type="button" class="icon-btn btn-move-down" ${i === sectors.length - 1 ? "disabled" : ""}><i data-lucide="chevron-down"></i></button>
-        </div>
-      ` : `<div class="sector-chevron"><i data-lucide="chevron-right"></i></div>`}
+      ${state.reorderMode
+        ? `<div class="drag-handle" role="button" aria-label="Arrastar para reordenar"><i data-lucide="grip-vertical"></i></div>`
+        : `<div class="sector-chevron"><i data-lucide="chevron-right"></i></div>`}
     `;
     if (state.reorderMode) {
-      card.querySelector(".btn-move-up")?.addEventListener("click", () => moveSectorFlow(sector.id, -1));
-      card.querySelector(".btn-move-down")?.addEventListener("click", () => moveSectorFlow(sector.id, 1));
+      if (state.draggingSectorId !== sector.id) {
+        card.querySelector(".drag-handle").addEventListener("pointerdown", (e) => startSectorDrag(e, sector.id));
+      }
     } else {
       card.addEventListener("click", () => openSettingsQuestions(sector.id));
     }
@@ -927,6 +933,7 @@ function renderSettingsSectors() {
 function renderSettingsResponsavelFilter() {
   const block = $("#settings-responsavel-filter-block");
   const wrap = $("#settings-responsavel-filter");
+  if (state.reorderMode) { block.classList.add("hidden"); return; }
   const names = [...new Set(state.sectors.map(s => s.responsavel).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
   if (!names.length) {
     block.classList.add("hidden");
@@ -938,20 +945,73 @@ function renderSettingsResponsavelFilter() {
     names.map(name => `<button type="button" class="filter-chip ${state.settingsResponsavelFilter === name ? "is-selected" : ""}" data-resp="${name}">${name}</button>`).join("");
 }
 
-// Modo de reordenar: troca o setor de posição com o vizinho na direção
-// informada e já persiste a nova ordem no Firestore.
-async function moveSectorFlow(sectorId, direction) {
-  const filterName = state.settingsResponsavelFilter;
-  const visible = filterName ? state.sectors.filter(s => (s.responsavel || "") === filterName) : state.sectors;
-  const visIndex = visible.findIndex(s => s.id === sectorId);
-  const targetVis = visIndex + direction;
-  if (targetVis < 0 || targetVis >= visible.length) return;
+/* ---------------- Arrastar para reordenar setores ---------------- */
+let dragCtx = null;
 
-  const realIndex = state.sectors.findIndex(s => s.id === sectorId);
-  const targetRealIndex = state.sectors.findIndex(s => s.id === visible[targetVis].id);
-  [state.sectors[realIndex], state.sectors[targetRealIndex]] = [state.sectors[targetRealIndex], state.sectors[realIndex]];
+function startSectorDrag(e, sectorId) {
+  e.preventDefault();
+  const list = $("#settings-sector-list");
+  const card = list.querySelector(`.settings-sector-card[data-sector-id="${sectorId}"]`);
+  if (!card) return;
 
+  const rect = card.getBoundingClientRect();
+  const clone = card.cloneNode(true);
+  clone.classList.add("drag-clone");
+  clone.style.width = rect.width + "px";
+  clone.style.left = rect.left + "px";
+  clone.style.top = rect.top + "px";
+  document.body.appendChild(clone);
+
+  state.draggingSectorId = sectorId;
+  card.classList.add("is-ghost");
+
+  dragCtx = { sectorId, startY: e.clientY, clone, lastPos: null };
+
+  document.addEventListener("pointermove", onSectorDragMove);
+  document.addEventListener("pointerup", endSectorDrag);
+  document.addEventListener("pointercancel", endSectorDrag);
+}
+
+function onSectorDragMove(e) {
+  if (!dragCtx) return;
+  const dy = e.clientY - dragCtx.startY;
+  dragCtx.clone.style.transform = `translateY(${dy}px)`;
+
+  const list = $("#settings-sector-list");
+  const cloneRect = dragCtx.clone.getBoundingClientRect();
+  const cloneCenterY = cloneRect.top + cloneRect.height / 2;
+
+  const others = state.sectors.filter(s => s.id !== dragCtx.sectorId);
+  const otherEls = Array.from(list.querySelectorAll(".settings-sector-card:not(.is-ghost)"));
+
+  let newPos = others.length;
+  for (let i = 0; i < otherEls.length; i++) {
+    const r = otherEls[i].getBoundingClientRect();
+    if (cloneCenterY < r.top + r.height / 2) { newPos = i; break; }
+  }
+
+  if (newPos === dragCtx.lastPos) return;
+  dragCtx.lastPos = newPos;
+
+  const dragged = state.sectors.find(s => s.id === dragCtx.sectorId);
+  const reordered = [...others];
+  reordered.splice(newPos, 0, dragged);
+  state.sectors = reordered;
   renderSettingsSectors();
+}
+
+async function endSectorDrag() {
+  document.removeEventListener("pointermove", onSectorDragMove);
+  document.removeEventListener("pointerup", endSectorDrag);
+  document.removeEventListener("pointercancel", endSectorDrag);
+  if (!dragCtx) return;
+
+  dragCtx.clone.remove();
+  state.draggingSectorId = null;
+  const finishedSectorId = dragCtx.sectorId;
+  dragCtx = null;
+  renderSettingsSectors();
+
   try {
     await store.reorderSectors(state.sectors.map(s => s.id));
   } catch (e) {
