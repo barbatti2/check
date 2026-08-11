@@ -135,6 +135,12 @@ function getSectorQuestions(sector, type) {
   return (type === "daily" ? sector.dailyQuestions : sector.questions) || [];
 }
 
+// Remove espaços nas pontas e espaços duplicados no meio (ex.: "Todos  "
+// e "Todos" viravam nomes "diferentes" e apareciam como chips duplicados).
+function normalizeResponsavelName(name) {
+  return (name || "").trim().replace(/\s+/g, " ");
+}
+
 // Perguntas efetivas de um setor DENTRO de um checklist já criado: usa a
 // lista congelada em sd.questions (checklists novos) e, se não existir
 // (checklists antigos, criados antes desta trava), cai para a lista viva
@@ -154,6 +160,34 @@ function fmtWeekLabel(dateLike) {
   end.setDate(end.getDate() + 6);
   const fmt = (x) => x.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   return `Semana de ${fmt(start)} a ${fmt(end)}`;
+}
+
+// No celular o arrasto lateral já funciona nativamente (touch scroll). No
+// desktop, sem touch, não tinha como "arrastar" essa lista com o mouse —
+// isso simula o mesmo gesto de arrastar usando o ponteiro do mouse.
+function makeHorizontalDragScroll(el) {
+  let isDown = false, startX = 0, startScroll = 0;
+  el.dragged = false;
+
+  el.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "touch") return; // touch já tem scroll nativo
+    isDown = true;
+    el.dragged = false;
+    startX = e.clientX;
+    startScroll = el.scrollLeft;
+    el.classList.add("is-dragging");
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener("pointermove", (e) => {
+    if (!isDown) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 4) el.dragged = true;
+    el.scrollLeft = startScroll - dx;
+  });
+  const stop = () => { isDown = false; el.classList.remove("is-dragging"); };
+  el.addEventListener("pointerup", stop);
+  el.addEventListener("pointercancel", stop);
+  el.addEventListener("pointerleave", stop);
 }
 
 function requireDb() {
@@ -889,7 +923,7 @@ function renderSettingsSectors() {
   // já que a posição salva é global entre todos os setores.
   const filterName = state.settingsResponsavelFilter;
   const sectors = (!state.reorderMode && filterName)
-    ? state.sectors.filter(s => (s.responsavel || "") === filterName)
+    ? state.sectors.filter(s => normalizeResponsavelName(s.responsavel).toLowerCase() === filterName.toLowerCase())
     : state.sectors;
 
   if (!sectors.length) {
@@ -934,7 +968,19 @@ function renderSettingsResponsavelFilter() {
   const block = $("#settings-responsavel-filter-block");
   const wrap = $("#settings-responsavel-filter");
   if (state.reorderMode) { block.classList.add("hidden"); return; }
-  const names = [...new Set(state.sectors.map(s => s.responsavel).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  // Agrupa por nome "normalizado" (sem espaços extras, sem diferenciar
+  // maiúsculas/minúsculas) para não gerar chips duplicados por causa de
+  // dados salvos de forma levemente diferente entre setores.
+  const byKey = new Map();
+  state.sectors.forEach(s => {
+    const name = normalizeResponsavelName(s.responsavel);
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (!byKey.has(key)) byKey.set(key, name);
+  });
+  const names = [...byKey.values()].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
   if (!names.length) {
     block.classList.add("hidden");
     state.settingsResponsavelFilter = null;
@@ -942,7 +988,7 @@ function renderSettingsResponsavelFilter() {
   }
   block.classList.remove("hidden");
   wrap.innerHTML = `<button type="button" class="filter-chip ${!state.settingsResponsavelFilter ? "is-selected" : ""}" data-resp="">Todos</button>` +
-    names.map(name => `<button type="button" class="filter-chip ${state.settingsResponsavelFilter === name ? "is-selected" : ""}" data-resp="${name}">${name}</button>`).join("");
+    names.map(name => `<button type="button" class="filter-chip ${state.settingsResponsavelFilter && state.settingsResponsavelFilter.toLowerCase() === name.toLowerCase() ? "is-selected" : ""}" data-resp="${name}">${name}</button>`).join("");
 }
 
 /* ---------------- Arrastar para reordenar setores ---------------- */
@@ -1078,7 +1124,7 @@ function openResponsavelEdit() {
 async function saveSectorResponsavelFlow() {
   const sector = state.sectors.find(s => s.id === state.settingsSectorId);
   if (!sector) return;
-  const value = $("#input-sector-responsavel").value.trim();
+  const value = normalizeResponsavelName($("#input-sector-responsavel").value);
   if (value !== (sector.responsavel || "")) {
     try {
       await store.updateSectorResponsavel(sector.id, value);
@@ -1306,11 +1352,14 @@ function wireEvents() {
   $("#btn-add-sector").addEventListener("click", addSectorFlow);
   $("#btn-toggle-reorder").addEventListener("click", toggleReorderMode);
   $("#settings-responsavel-filter").addEventListener("click", (e) => {
+    const wrap = $("#settings-responsavel-filter");
+    if (wrap.dragged) { wrap.dragged = false; return; } // ignora clique após arrastar
     const chip = e.target.closest(".filter-chip");
     if (!chip) return;
     state.settingsResponsavelFilter = chip.dataset.resp || null;
     renderSettingsSectors();
   });
+  makeHorizontalDragScroll($("#settings-responsavel-filter"));
   $("#input-new-sector").addEventListener("keydown", e => { if (e.key === "Enter") addSectorFlow(); });
   $("#btn-add-question").addEventListener("click", addQuestionFlow);
   $("#btn-delete-sector").addEventListener("click", deleteSectorFlow);
