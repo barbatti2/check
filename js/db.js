@@ -99,6 +99,14 @@ export async function addSector(name) {
   return ref.id;
 }
 
+export async function reorderSectors(orderedIds) {
+  const batch = writeBatch(db);
+  orderedIds.forEach((id, index) => {
+    batch.update(doc(db, "sectors", id), { order: index });
+  });
+  await batch.commit();
+}
+
 export async function updateSectorName(sectorId, name) {
   await updateDoc(doc(db, "sectors", sectorId), { name });
 }

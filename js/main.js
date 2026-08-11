@@ -30,6 +30,8 @@ const state = {
   historyItems: [],
   settingsSectorId: null,
   settingsQuestionType: "weekly",    // aba ativa na tela de perguntas das configurações
+  settingsResponsavelFilter: null,   // nome selecionado no filtro por responsável
+  reorderMode: false,                // true = tela de setores em modo de reordenar
   editingQuestionId: null,
   pendenciaCtx: null,      // { sectorId, questionId, questionText, editingId }
   selectedPriority: null,
@@ -860,6 +862,8 @@ async function toggleResolvePendencia(ronda, pendId) {
    CONFIGURAÇÕES
 ============================================================ */
 async function openSettings() {
+  state.reorderMode = false;
+  $("#btn-toggle-reorder").classList.remove("is-active");
   if (!requireDb()) { showScreen("screen-settings"); return; }
   showScreen("screen-settings");
   try {
@@ -872,25 +876,94 @@ async function openSettings() {
 }
 
 function renderSettingsSectors() {
+  renderSettingsResponsavelFilter();
+
   const list = $("#settings-sector-list");
   list.innerHTML = "";
-  state.sectors.forEach(sector => {
+
+  const filterName = state.settingsResponsavelFilter;
+  const sectors = filterName
+    ? state.sectors.filter(s => (s.responsavel || "") === filterName)
+    : state.sectors;
+
+  if (!sectors.length) {
+    list.innerHTML = `<div class="empty-state"><i data-lucide="search-x"></i><p>Nenhum setor com esse responsável.</p></div>`;
+    refreshIcons();
+    return;
+  }
+
+  sectors.forEach((sector, i) => {
     const weeklyCount = getSectorQuestions(sector, "weekly").length;
     const dailyCount = getSectorQuestions(sector, "daily").length;
     const card = document.createElement("div");
     card.className = "settings-sector-card";
+    if (state.reorderMode) card.classList.add("is-reorder");
     card.innerHTML = `
       <div class="sector-status"><i data-lucide="layers"></i></div>
       <div class="sector-body">
         <p class="sector-name">${sector.name}</p>
         <p class="sector-meta">${dailyCount} diária${dailyCount === 1 ? "" : "s"} · ${weeklyCount} semanal${weeklyCount === 1 ? "" : "s"}${sector.responsavel ? ` · <span class="meta-responsavel">Responsável: ${sector.responsavel}</span>` : ""}</p>
       </div>
-      <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
+      ${state.reorderMode ? `
+        <div class="reorder-controls">
+          <button type="button" class="icon-btn btn-move-up" ${i === 0 ? "disabled" : ""}><i data-lucide="chevron-up"></i></button>
+          <button type="button" class="icon-btn btn-move-down" ${i === sectors.length - 1 ? "disabled" : ""}><i data-lucide="chevron-down"></i></button>
+        </div>
+      ` : `<div class="sector-chevron"><i data-lucide="chevron-right"></i></div>`}
     `;
-    card.addEventListener("click", () => openSettingsQuestions(sector.id));
+    if (state.reorderMode) {
+      card.querySelector(".btn-move-up")?.addEventListener("click", () => moveSectorFlow(sector.id, -1));
+      card.querySelector(".btn-move-down")?.addEventListener("click", () => moveSectorFlow(sector.id, 1));
+    } else {
+      card.addEventListener("click", () => openSettingsQuestions(sector.id));
+    }
     list.appendChild(card);
   });
   refreshIcons();
+}
+
+// Filtro por responsável: só aparece quando algum setor tem responsável
+// definido — monta os chips dinamicamente a partir dos nomes cadastrados.
+function renderSettingsResponsavelFilter() {
+  const block = $("#settings-responsavel-filter-block");
+  const wrap = $("#settings-responsavel-filter");
+  const names = [...new Set(state.sectors.map(s => s.responsavel).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  if (!names.length) {
+    block.classList.add("hidden");
+    state.settingsResponsavelFilter = null;
+    return;
+  }
+  block.classList.remove("hidden");
+  wrap.innerHTML = `<button type="button" class="filter-chip ${!state.settingsResponsavelFilter ? "is-selected" : ""}" data-resp="">Todos</button>` +
+    names.map(name => `<button type="button" class="filter-chip ${state.settingsResponsavelFilter === name ? "is-selected" : ""}" data-resp="${name}">${name}</button>`).join("");
+}
+
+// Modo de reordenar: troca o setor de posição com o vizinho na direção
+// informada e já persiste a nova ordem no Firestore.
+async function moveSectorFlow(sectorId, direction) {
+  const filterName = state.settingsResponsavelFilter;
+  const visible = filterName ? state.sectors.filter(s => (s.responsavel || "") === filterName) : state.sectors;
+  const visIndex = visible.findIndex(s => s.id === sectorId);
+  const targetVis = visIndex + direction;
+  if (targetVis < 0 || targetVis >= visible.length) return;
+
+  const realIndex = state.sectors.findIndex(s => s.id === sectorId);
+  const targetRealIndex = state.sectors.findIndex(s => s.id === visible[targetVis].id);
+  [state.sectors[realIndex], state.sectors[targetRealIndex]] = [state.sectors[targetRealIndex], state.sectors[realIndex]];
+
+  renderSettingsSectors();
+  try {
+    await store.reorderSectors(state.sectors.map(s => s.id));
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao salvar a nova ordem.");
+  }
+}
+
+function toggleReorderMode() {
+  state.reorderMode = !state.reorderMode;
+  $("#btn-toggle-reorder").classList.toggle("is-active", state.reorderMode);
+  renderSettingsSectors();
 }
 
 async function addSectorFlow() {
@@ -1171,6 +1244,13 @@ function wireEvents() {
 
   // configurações
   $("#btn-add-sector").addEventListener("click", addSectorFlow);
+  $("#btn-toggle-reorder").addEventListener("click", toggleReorderMode);
+  $("#settings-responsavel-filter").addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    state.settingsResponsavelFilter = chip.dataset.resp || null;
+    renderSettingsSectors();
+  });
   $("#input-new-sector").addEventListener("keydown", e => { if (e.key === "Enter") addSectorFlow(); });
   $("#btn-add-question").addEventListener("click", addQuestionFlow);
   $("#btn-delete-sector").addEventListener("click", deleteSectorFlow);
