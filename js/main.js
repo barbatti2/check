@@ -33,6 +33,7 @@ const state = {
   settingsResponsavelFilter: null,   // nome selecionado no filtro por responsável
   reorderMode: false,                // true = tela de setores em modo de reordenar
   draggingSectorId: null,            // setor sendo arrastado no momento (para renderizar como "fantasma")
+  expandedSectorIds: new Set(),      // setores com o detalhe de atingiu/não atingiu aberto (na ronda)
   editingQuestionId: null,
   pendenciaCtx: null,      // { sectorId, questionId, questionText, editingId }
   selectedPriority: null,
@@ -288,6 +289,7 @@ async function openChecklistFlow(type) {
     state.editingCompletedRonda = ronda.status === "completed";
     state.editSnapshot = state.editingCompletedRonda ? snapshotRondaState(ronda) : null;
     state.isDirty = false;
+    state.expandedSectorIds.clear();
     renderRondaSectors();
     showScreen("screen-ronda-sectors");
   } catch (e) {
@@ -335,27 +337,67 @@ function renderRondaSectors() {
   list.innerHTML = "";
   state.sectors.forEach(sector => {
     const sd = ronda.sectorsData[sector.id] || { completed: false, answers: {}, totalQuestions: getSectorQuestions(sector, type).length };
-    const total = getRondaSectorQuestions(sector, sd, type).length;
-    const answered = Object.keys(sd.answers || {}).length;
+    const questions = getRondaSectorQuestions(sector, sd, type);
+    const total = questions.length;
+    const answersMap = sd.answers || {};
+    const answered = Object.keys(answersMap).length;
     const isEmpty = total === 0;
     const isDone = sd.completed;
+    const okCount = questions.filter(q => answersMap[q.id]?.status === "ok").length;
+    const notOkCount = questions.filter(q => answersMap[q.id]?.status === "not_ok").length;
+    const isExpanded = state.expandedSectorIds.has(sector.id);
 
     const card = document.createElement("div");
     card.className = "sector-card" + (isDone ? " is-done" : "") + (isEmpty ? " is-empty" : "");
     card.innerHTML = `
-      <div class="sector-status">
-        <i data-lucide="${isDone ? "circle-check" : "circle"}"></i>
+      <div class="sector-card-main">
+        <div class="sector-status">
+          <i data-lucide="${isDone ? "circle-check" : "circle"}"></i>
+        </div>
+        <div class="sector-body">
+          <p class="sector-name">${sector.name}</p>
+          <p class="sector-meta">${isEmpty ? "Sem perguntas cadastradas" : isDone ? "Setor concluído" : `${answered}/${total} perguntas`}</p>
+          ${answered > 0 ? `
+            <button type="button" class="sector-stats-toggle ${isExpanded ? "is-expanded" : ""}" data-sector-toggle="${sector.id}">
+              <span class="stat-ok"><i data-lucide="check-circle-2"></i>${okCount} atingiu</span>
+              <span class="stat-bad"><i data-lucide="x-circle"></i>${notOkCount} não atingiu</span>
+              <i data-lucide="chevron-down" class="stats-caret"></i>
+            </button>
+          ` : ""}
+        </div>
+        <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
       </div>
-      <div class="sector-body">
-        <p class="sector-name">${sector.name}</p>
-        <p class="sector-meta">${isEmpty ? "Sem perguntas cadastradas" : isDone ? "Setor concluído" : `${answered}/${total} perguntas`}</p>
-      </div>
-      <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
+      ${isExpanded ? `
+        <div class="sector-card-expand">
+          ${questions.map(q => {
+            const st = answersMap[q.id]?.status;
+            const label = st === "ok" ? "Atingiu" : st === "not_ok" ? "Não atingiu" : "Sem resposta";
+            const cls = st === "ok" ? "is-ok" : st === "not_ok" ? "is-bad" : "is-pending";
+            return `
+              <div class="sector-expand-row ${cls}">
+                <i data-lucide="${st === "ok" ? "check-circle-2" : st === "not_ok" ? "x-circle" : "circle"}"></i>
+                <span class="sector-expand-text">${q.text}</span>
+                <span class="sector-expand-label">${label}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      ` : ""}
     `;
+
     if (!isEmpty && (!isDone || state.editingCompletedRonda)) {
-      card.addEventListener("click", () => openSectorQuestions(sector.id));
+      card.querySelector(".sector-card-main").addEventListener("click", () => openSectorQuestions(sector.id));
     } else if (isDone) {
-      card.addEventListener("click", () => showToast("Setor já finalizado nesta ronda."));
+      card.querySelector(".sector-card-main").addEventListener("click", () => showToast("Setor já finalizado nesta ronda."));
+    }
+    const toggle = card.querySelector(".sector-stats-toggle");
+    if (toggle) {
+      toggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (state.expandedSectorIds.has(sector.id)) state.expandedSectorIds.delete(sector.id);
+        else state.expandedSectorIds.add(sector.id);
+        renderRondaSectors();
+      });
     }
     list.appendChild(card);
   });
@@ -784,6 +826,7 @@ async function startEditHistoryRonda(ronda) {
     state.editingFromHistory = true;
     state.editSnapshot = snapshotRondaState(ronda);
     state.isDirty = false;
+    state.expandedSectorIds.clear();
     renderRondaSectors();
     showScreen("screen-ronda-sectors");
   } catch (e) {
