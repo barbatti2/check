@@ -883,7 +883,7 @@ function renderSettingsSectors() {
       <div class="sector-status"><i data-lucide="layers"></i></div>
       <div class="sector-body">
         <p class="sector-name">${sector.name}</p>
-        <p class="sector-meta">${dailyCount} diária${dailyCount === 1 ? "" : "s"} · ${weeklyCount} semanal${weeklyCount === 1 ? "" : "s"}${sector.responsavel ? ` · Responsável: ${sector.responsavel}` : ""}</p>
+        <p class="sector-meta">${dailyCount} diária${dailyCount === 1 ? "" : "s"} · ${weeklyCount} semanal${weeklyCount === 1 ? "" : "s"}${sector.responsavel ? ` · <span class="meta-responsavel">Responsável: ${sector.responsavel}</span>` : ""}</p>
       </div>
       <div class="sector-chevron"><i data-lucide="chevron-right"></i></div>
     `;
