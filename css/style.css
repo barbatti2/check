@@ -501,8 +501,11 @@ input,textarea{ font-family:inherit; }
 .filter-chip svg{ width:14px; height:14px; }
 .filter-chip.is-selected{ background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
 .filter-chip--icon{ padding:8px 12px 8px 11px; }
-.filter-custom{ display:flex; align-items:flex-end; gap:10px; margin-top:12px; }
+.filter-custom{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
 .filter-custom.hidden{ display:none; }
+.filter-custom-row{ display:flex; gap:10px; }
+.filter-custom-row .field-inline{ min-width:0; }
+.filter-custom > .btn-text{ align-self:flex-end; }
 
 .field-inline{ display:flex; flex-direction:column; gap:5px; flex:1; font-size:11.5px; color:var(--ink-muted); font-family: var(--font-mono); text-transform:uppercase; letter-spacing:.04em; }
 .field-inline input{
