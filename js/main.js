@@ -683,6 +683,56 @@ function priorityBadgeHtml(p) {
   return `<span class="priority-badge ${p}">${p}</span>`;
 }
 
+const PRIORITY_WEIGHT = { Alta: 3, Média: 2, Baixa: 1 };
+
+// Agrupa as pendências por setor e monta um resumo curto e padronizado —
+// pensado para dar uma visão rápida do que precisa melhorar em cada setor,
+// tanto no checklist diário quanto no semanal.
+function renderSectorRecap(ronda) {
+  const block = $("#summary-recap-block");
+  const list = $("#summary-recap-list");
+  const pendencias = ronda.pendencias || [];
+
+  if (!pendencias.length) {
+    block.classList.add("hidden");
+    return;
+  }
+  block.classList.remove("hidden");
+
+  const bySector = new Map();
+  pendencias.forEach(p => {
+    const key = p.sectorName || "Setor";
+    if (!bySector.has(key)) bySector.set(key, []);
+    bySector.get(key).push(p);
+  });
+
+  const groups = [...bySector.entries()].map(([sectorName, items]) => {
+    const counts = { Alta: 0, Média: 0, Baixa: 0 };
+    items.forEach(p => { if (counts[p.prioridade] !== undefined) counts[p.prioridade]++; });
+    const worst = items.reduce((max, p) => Math.max(max, PRIORITY_WEIGHT[p.prioridade] || 0), 0);
+    return { sectorName, items, counts, worst };
+  });
+  // setores com pendências mais urgentes aparecem primeiro
+  groups.sort((a, b) => b.worst - a.worst || b.items.length - a.items.length || a.sectorName.localeCompare(b.sectorName, "pt-BR"));
+
+  list.innerHTML = groups.map(g => {
+    const countsHtml = ["Alta", "Média", "Baixa"]
+      .filter(p => g.counts[p] > 0)
+      .map(p => `<span class="recap-count-badge ${p}">${g.counts[p]} ${p}</span>`)
+      .join("");
+    const itemsHtml = g.items.map(p => `<li>${p.descricao}</li>`).join("");
+    return `
+      <div class="recap-card">
+        <div class="recap-head">
+          <span class="recap-sector">${g.sectorName}</span>
+          <div class="recap-counts">${countsHtml}</div>
+        </div>
+        <ul class="recap-items">${itemsHtml}</ul>
+      </div>
+    `;
+  }).join("");
+}
+
 function renderSummary(ronda, opts = {}) {
   $("#summary-date-label").textContent = fmtDateShort(ronda.startedAt);
   $("#score-percent").textContent = `${ronda.score ?? 0}%`;
@@ -690,6 +740,8 @@ function renderSummary(ronda, opts = {}) {
   $("#summary-conform").textContent = ronda.conformCount ?? 0;
   $("#summary-nonconform").textContent = ronda.nonConformCount ?? 0;
   $("#summary-pendencias-count").textContent = (ronda.pendencias || []).length;
+
+  renderSectorRecap(ronda);
 
   const list = $("#summary-pendencias-list");
   list.innerHTML = "";
