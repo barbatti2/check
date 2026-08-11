@@ -1082,7 +1082,7 @@ function wireEvents() {
   $("#btn-start-weekly").addEventListener("click", () => openChecklistFlow("weekly"));
   $("#btn-history").addEventListener("click", () => {
     state.historyRange = "all";
-    $all(".filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.range === "all"));
+    $all("#history-filter-chips .filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.range === "all"));
     $("#filter-custom-dates").classList.add("hidden");
     $("#filter-date-from").value = "";
     $("#filter-date-to").value = "";
@@ -1141,11 +1141,15 @@ function wireEvents() {
     if (action) await action();
   });
 
-  // histórico
-  $all(".filter-chip").forEach(chip => {
+  // histórico — seletor escopado ao grupo de período: usar ".filter-chip"
+  // sem escopo aqui pegava também os chips "Semanal"/"Diário" das
+  // Configurações (mesma classe visual), causando estados cruzados entre
+  // as duas telas (chip errado marcado como selecionado, filtro resetado
+  // sozinho, etc.)
+  $all("#history-filter-chips .filter-chip").forEach(chip => {
     chip.addEventListener("click", () => {
       const range = chip.dataset.range;
-      $all(".filter-chip").forEach(c => c.classList.toggle("is-selected", c === chip));
+      $all("#history-filter-chips .filter-chip").forEach(c => c.classList.toggle("is-selected", c === chip));
       if (range === "custom") {
         $("#filter-custom-dates").classList.toggle("hidden");
         return;
