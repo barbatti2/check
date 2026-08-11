@@ -733,6 +733,68 @@ function renderSectorRecap(ronda) {
   }).join("");
 }
 
+// Botão "Gerar resumo com IA": manda setor + texto de cada pendência para
+// a Netlify Function, que chama o Gemini e devolve um resumo já agrupado
+// e reescrito em um padrão fixo ("Ação necessária: ..."). Reutilizado
+// tanto na tela de Resultado quanto no detalhe do Histórico.
+async function runAiSummary(ronda, ids) {
+  const pendencias = (ronda && ronda.pendencias) || [];
+  if (!pendencias.length) {
+    showToast("Não há pendências para resumir.");
+    return;
+  }
+
+  const btn = document.getElementById(ids.btn);
+  const resultBox = document.getElementById(ids.result);
+  btn.classList.add("is-loading");
+  resultBox.classList.remove("hidden");
+  resultBox.innerHTML = `<div class="ai-summary-loading"><i data-lucide="loader-2"></i>Gerando resumo com IA…</div>`;
+  refreshIcons();
+
+  try {
+    const payload = {
+      pendencias: pendencias.map(p => ({
+        setor: p.sectorName || "Setor",
+        texto: p.descricao || ""
+      }))
+    };
+    const resp = await fetch("/.netlify/functions/resumir", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || "Falha ao gerar o resumo.");
+    renderAiSummaryInto(resultBox, data);
+  } catch (e) {
+    console.error(e);
+    resultBox.innerHTML = `<div class="ai-summary-error">Não foi possível gerar o resumo com IA agora. Tente novamente.</div>`;
+    showToast("Erro ao gerar resumo com IA.");
+  } finally {
+    btn.classList.remove("is-loading");
+  }
+}
+
+function renderAiSummaryInto(resultBox, data) {
+  const setores = Array.isArray(data.setores) ? data.setores : [];
+  if (!setores.length) {
+    resultBox.innerHTML = `<div class="ai-summary-error">A IA não retornou um resumo válido.</div>`;
+    return;
+  }
+  resultBox.innerHTML = setores.map(s => `
+    <div class="recap-card ai-recap-card">
+      <div class="recap-head"><span class="recap-sector">${s.setor}</span></div>
+      <ul class="recap-items">
+        ${(s.acoes || []).map(a => `<li>${a}</li>`).join("")}
+      </ul>
+    </div>
+  `).join("");
+}
+
+function generateAiSummaryFlow() {
+  runAiSummary(state.currentRonda, { btn: "btn-generate-ai-summary", result: "ai-summary-result" });
+}
+
 function renderSummary(ronda, opts = {}) {
   $("#summary-date-label").textContent = fmtDateShort(ronda.startedAt);
   $("#score-percent").textContent = `${ronda.score ?? 0}%`;
@@ -742,6 +804,14 @@ function renderSummary(ronda, opts = {}) {
   $("#summary-pendencias-count").textContent = (ronda.pendencias || []).length;
 
   renderSectorRecap(ronda);
+
+  // Reseta o resumo por IA a cada abertura do Resultado (não deve ficar
+  // um resumo antigo de outro checklist aparecendo aqui).
+  const hasPendencias = (ronda.pendencias || []).length > 0;
+  $("#ai-summary-block").classList.toggle("hidden", !hasPendencias);
+  $("#ai-summary-result").classList.add("hidden");
+  $("#ai-summary-result").innerHTML = "";
+  $("#btn-generate-ai-summary").classList.remove("is-loading");
 
   const list = $("#summary-pendencias-list");
   list.innerHTML = "";
@@ -936,9 +1006,23 @@ function openHistoryDetail(ronda) {
       </div>
     </div>
     <div class="hist-status-row">${historyBadgesHtml(ronda)}</div>
+    ${(ronda.pendencias || []).length ? `
+      <section class="section-block" id="hist-ai-summary-block">
+        <button id="hist-btn-generate-ai-summary" class="btn btn-ghost btn-ai-summary">
+          <i data-lucide="sparkles"></i> Gerar resumo com IA
+        </button>
+        <div id="hist-ai-summary-result" class="card-list hidden"></div>
+      </section>
+    ` : ""}
     <div class="section-header" style="padding:14px 2px 10px;"><h3>Pendências</h3></div>
     <div class="card-list" id="hist-pend-list"></div>
   `;
+  const aiBtn = body.querySelector("#hist-btn-generate-ai-summary");
+  if (aiBtn) {
+    aiBtn.addEventListener("click", () => {
+      runAiSummary(ronda, { btn: "hist-btn-generate-ai-summary", result: "hist-ai-summary-result" });
+    });
+  }
   const pendList = body.querySelector("#hist-pend-list");
   const pendencias = ronda.pendencias || [];
   if (!pendencias.length) {
@@ -1385,6 +1469,7 @@ function wireEvents() {
   $("#btn-finish-sector").addEventListener("click", finishSector);
   $("#btn-finish-ronda").addEventListener("click", finishRondaFlow);
   $("#btn-delete-ronda").addEventListener("click", deleteCurrentRondaFlow);
+  $("#btn-generate-ai-summary").addEventListener("click", generateAiSummaryFlow);
   $("#btn-finish-summary").addEventListener("click", () => {
     const returnToHistory = state.editingFromHistory;
     state.currentRonda = null;
