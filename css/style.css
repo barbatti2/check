@@ -28,6 +28,7 @@
 
   --ok: #33604F;
   --ok-soft: #E1EAE3;
+  --ok-vivid: #0F9D58;
   --bad: #B14B3E;
   --bad-soft: #F6E4E0;
   --warn: #B07F27;
@@ -385,7 +386,7 @@ input,textarea{ font-family:inherit; }
 .sector-card.is-done .sector-status{ background: var(--ok-soft); color: var(--ok); }
 .sector-body{ flex:1; min-width:0; }
 .sector-name{ margin:0; font-family: var(--font-display); font-weight:500; font-size:17px; letter-spacing:-0.01em; color: var(--ink); }
-.sector-meta .meta-responsavel{ color: var(--ok); font-weight:600; }
+.sector-meta .meta-responsavel{ color: var(--ok-vivid); font-weight:700; }
 .sector-meta{ margin:4px 0 0; font-size:12.5px; color:var(--ink-muted); font-family:var(--font-mono); }
 .sector-chevron{ color: var(--ink-faint); flex-shrink:0; }
 .sector-chevron svg{ width:18px; height:18px; }
@@ -482,14 +483,14 @@ input,textarea{ font-family:inherit; }
   padding: 14px 12px 12px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
 }
 .history-toolbar-label{
-  display:flex; align-items:center; gap:7px; margin-bottom:11px;
+  display:flex; align-items:center; justify-content:center; gap:7px; margin-bottom:11px;
   font-family: var(--font-mono); font-size:11px; text-transform:uppercase;
   letter-spacing:.06em; color: var(--ink-faint);
 }
 .history-toolbar-label svg{ width:14px; height:14px; }
 
 .filter-chips{
-  display:flex; flex-wrap:wrap; gap:6px;
+  display:flex; flex-wrap:wrap; justify-content:center; gap:6px;
   margin: 0 -2px; padding: 2px 2px 4px;
 }
 .filter-chip{
@@ -501,11 +502,11 @@ input,textarea{ font-family:inherit; }
 .filter-chip svg{ width:13px; height:13px; }
 .filter-chip.is-selected{ background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
 .filter-chip--icon{ padding:7px 10px 7px 9px; }
-.filter-custom{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+.filter-custom{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:12px; }
 .filter-custom.hidden{ display:none; }
-.filter-custom-row{ display:flex; gap:10px; }
-.filter-custom-row .field-inline{ min-width:0; }
-.filter-custom > .btn-text{ align-self:flex-end; }
+.filter-custom-row{ display:flex; gap:10px; width:100%; }
+.filter-custom-row .field-inline{ min-width:0; text-align:center; }
+.filter-custom > .btn-text{ align-self:center; }
 
 .field-inline{ display:flex; flex-direction:column; gap:5px; flex:1; font-size:11.5px; color:var(--ink-muted); font-family: var(--font-mono); text-transform:uppercase; letter-spacing:.04em; }
 .field-inline input{
