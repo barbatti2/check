@@ -513,6 +513,21 @@ input,textarea{ font-family:inherit; }
 .pendencia-meta span{ display:inline-flex; align-items:center; gap:5px; }
 .pendencia-meta svg{ width:13px; height:13px; }
 
+/* Resumo por setor (no Resultado do checklist) */
+.recap-card{
+  background: var(--surface); border-radius: var(--radius-lg);
+  padding: 14px 16px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
+}
+.recap-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+.recap-sector{ font-family: var(--font-display); font-weight:700; font-size:15px; color: var(--ink); }
+.recap-counts{ display:flex; gap:6px; flex-wrap:wrap; }
+.recap-count-badge{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius: var(--radius-pill); }
+.recap-count-badge.Baixa{ background: var(--ok-soft); color: var(--ok); }
+.recap-count-badge.Média{ background: var(--warn-soft); color: var(--warn); }
+.recap-count-badge.Alta{ background: var(--bad-soft); color: var(--bad); }
+.recap-items{ margin:0; padding-left:18px; display:flex; flex-direction:column; gap:5px; }
+.recap-items li{ font-size:13px; color: var(--ink); line-height:1.4; }
+
 /* ---------------- History ---------------- */
 .history-toolbar-card{
   background: var(--surface); border-radius: var(--radius-lg);
