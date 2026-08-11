@@ -164,30 +164,39 @@ function fmtWeekLabel(dateLike) {
 
 // No celular o arrasto lateral já funciona nativamente (touch scroll). No
 // desktop, sem touch, não tinha como "arrastar" essa lista com o mouse —
-// isso simula o mesmo gesto de arrastar usando o ponteiro do mouse.
+// isso simula o mesmo gesto usando eventos de mouse simples (evita usar
+// setPointerCapture, que em alguns navegadores atrapalhava o clique normal
+// nos chips depois).
 function makeHorizontalDragScroll(el) {
-  let isDown = false, startX = 0, startScroll = 0;
-  el.dragged = false;
+  let isDown = false, startX = 0, startScroll = 0, moved = false;
 
-  el.addEventListener("pointerdown", (e) => {
-    if (e.pointerType === "touch") return; // touch já tem scroll nativo
+  el.addEventListener("mousedown", (e) => {
     isDown = true;
-    el.dragged = false;
-    startX = e.clientX;
+    moved = false;
+    startX = e.pageX;
     startScroll = el.scrollLeft;
-    el.classList.add("is-dragging");
-    el.setPointerCapture(e.pointerId);
   });
-  el.addEventListener("pointermove", (e) => {
+
+  window.addEventListener("mousemove", (e) => {
     if (!isDown) return;
-    const dx = e.clientX - startX;
-    if (Math.abs(dx) > 4) el.dragged = true;
+    const dx = e.pageX - startX;
+    if (Math.abs(dx) > 4) {
+      moved = true;
+      el.classList.add("is-dragging");
+    }
     el.scrollLeft = startScroll - dx;
   });
-  const stop = () => { isDown = false; el.classList.remove("is-dragging"); };
-  el.addEventListener("pointerup", stop);
-  el.addEventListener("pointercancel", stop);
-  el.addEventListener("pointerleave", stop);
+
+  window.addEventListener("mouseup", () => {
+    if (isDown && moved) {
+      // Impede que o "click" do fim do arrasto acione um chip sem querer;
+      // um clique normal (sem arrastar) passa direto, sem ser afetado.
+      const suppressNextClick = (e) => { e.stopPropagation(); };
+      el.addEventListener("click", suppressNextClick, { capture: true, once: true });
+    }
+    isDown = false;
+    el.classList.remove("is-dragging");
+  });
 }
 
 function requireDb() {
@@ -944,7 +953,8 @@ function renderSettingsSectors() {
       <div class="sector-status"><i data-lucide="layers"></i></div>
       <div class="sector-body">
         <p class="sector-name">${sector.name}</p>
-        <p class="sector-meta">${dailyCount} diária${dailyCount === 1 ? "" : "s"} · ${weeklyCount} semanal${weeklyCount === 1 ? "" : "s"}${sector.responsavel ? ` · <span class="meta-responsavel">Responsável: ${sector.responsavel}</span>` : ""}</p>
+        <p class="sector-meta">${dailyCount} diária${dailyCount === 1 ? "" : "s"} · ${weeklyCount} semanal${weeklyCount === 1 ? "" : "s"}</p>
+        ${sector.responsavel ? `<p class="meta-responsavel">Responsável: ${sector.responsavel}</p>` : ""}
       </div>
       ${state.reorderMode
         ? `<div class="drag-handle" role="button" aria-label="Arrastar para reordenar"><i data-lucide="grip-vertical"></i></div>`
@@ -1352,8 +1362,6 @@ function wireEvents() {
   $("#btn-add-sector").addEventListener("click", addSectorFlow);
   $("#btn-toggle-reorder").addEventListener("click", toggleReorderMode);
   $("#settings-responsavel-filter").addEventListener("click", (e) => {
-    const wrap = $("#settings-responsavel-filter");
-    if (wrap.dragged) { wrap.dragged = false; return; } // ignora clique após arrastar
     const chip = e.target.closest(".filter-chip");
     if (!chip) return;
     state.settingsResponsavelFilter = chip.dataset.resp || null;
