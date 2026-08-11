@@ -528,6 +528,18 @@ input,textarea{ font-family:inherit; }
 .recap-items{ margin:0; padding-left:18px; display:flex; flex-direction:column; gap:5px; }
 .recap-items li{ font-size:13px; color: var(--ink); line-height:1.4; }
 
+/* Resumo gerado por IA */
+.btn-ai-summary{ width:100%; }
+.btn-ai-summary svg{ width:18px; height:18px; color: var(--accent); }
+.btn-ai-summary.is-loading{ opacity:.7; pointer-events:none; }
+.btn-ai-summary.is-loading svg{ animation: spin .8s linear infinite; }
+.ai-recap-card{ border-color: var(--accent); }
+.ai-summary-loading, .ai-summary-error{
+  text-align:center; font-size:13px; padding:16px; color: var(--ink-muted);
+}
+.ai-summary-loading svg{ width:16px; height:16px; vertical-align:-3px; margin-right:6px; animation: spin .8s linear infinite; }
+.ai-summary-error{ color: var(--bad); }
+
 /* ---------------- History ---------------- */
 .history-toolbar-card{
   background: var(--surface); border-radius: var(--radius-lg);
