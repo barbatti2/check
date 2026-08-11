@@ -493,6 +493,12 @@ input,textarea{ font-family:inherit; }
   display:flex; flex-wrap:wrap; justify-content:center; gap:6px;
   margin: 0 -2px; padding: 2px 2px 4px;
 }
+.filter-chips--scroll{
+  flex-wrap:nowrap; justify-content:flex-start; overflow-x:auto;
+  -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity;
+}
+.filter-chips--scroll::-webkit-scrollbar{ display:none; }
+.filter-chips--scroll .filter-chip{ scroll-snap-align:start; }
 .filter-chip{
   flex:0 0 auto; white-space:nowrap;
   border:1.5px solid var(--line); background: var(--surface-2); color: var(--ink-muted);
@@ -574,14 +580,21 @@ input,textarea{ font-family:inherit; }
 }
 .settings-sector-card .sector-body{ flex:1; }
 .settings-sector-card.is-reorder{ cursor:default; }
+.settings-sector-card.is-ghost{ opacity:.35; }
 
-/* Reordenar setores */
+/* Reordenar setores (arrastar) */
 #btn-toggle-reorder.is-active{ background: var(--accent); color: var(--accent-contrast); }
-.reorder-controls{ display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
-.reorder-controls .icon-btn{ width:32px; height:32px; }
-.reorder-controls .icon-btn svg{ width:16px; height:16px; }
-.reorder-controls .icon-btn:disabled{ opacity:.3; cursor:not-allowed; }
-.reorder-controls .icon-btn:disabled:active{ transform:none; }
+.drag-handle{
+  flex-shrink:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+  color: var(--ink-faint); cursor:grab; touch-action:none;
+}
+.drag-handle svg{ width:20px; height:20px; }
+.drag-handle:active{ cursor:grabbing; }
+.drag-clone{
+  position:fixed; z-index:999; pointer-events:none; margin:0;
+  box-shadow: var(--shadow-lg); opacity:.98; border-radius: var(--radius-lg);
+  transition: none;
+}
 .settings-question-card{ cursor:default; align-items:flex-start; }
 .settings-question-card .q-text{ flex:1; font-size:14px; font-weight:500; margin:0; }
 .settings-question-card .q-actions{ display:flex; gap:6px; flex-shrink:0; }
