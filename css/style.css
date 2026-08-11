@@ -496,7 +496,9 @@ input,textarea{ font-family:inherit; }
 .filter-chips--scroll{
   flex-wrap:nowrap; justify-content:flex-start; overflow-x:auto;
   -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity;
+  cursor:grab; user-select:none;
 }
+.filter-chips--scroll.is-dragging{ cursor:grabbing; scroll-snap-type:none; }
 .filter-chips--scroll::-webkit-scrollbar{ display:none; }
 .filter-chips--scroll .filter-chip{ scroll-snap-align:start; }
 .filter-chip{
@@ -708,8 +710,11 @@ input,textarea{ font-family:inherit; }
 
 .hidden{ display:none !important; }
 
-/* Focus visibility for keyboard users */
-button:focus-visible, input:focus-visible, textarea:focus-visible{
+/* Remove o contorno padrão do navegador ao clicar com o mouse (aparecia
+   como uma borda escura nos cards do menu, só no desktop) — mantém o
+   contorno de acessibilidade apenas para navegação por teclado. */
+button:focus, a:focus{ outline:none; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible{
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
 
