@@ -573,6 +573,15 @@ input,textarea{ font-family:inherit; }
   border-radius: var(--radius-pill); background: var(--ink); opacity:.85;
 }
 .settings-sector-card .sector-body{ flex:1; }
+.settings-sector-card.is-reorder{ cursor:default; }
+
+/* Reordenar setores */
+#btn-toggle-reorder.is-active{ background: var(--accent); color: var(--accent-contrast); }
+.reorder-controls{ display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+.reorder-controls .icon-btn{ width:32px; height:32px; }
+.reorder-controls .icon-btn svg{ width:16px; height:16px; }
+.reorder-controls .icon-btn:disabled{ opacity:.3; cursor:not-allowed; }
+.reorder-controls .icon-btn:disabled:active{ transform:none; }
 .settings-question-card{ cursor:default; align-items:flex-start; }
 .settings-question-card .q-text{ flex:1; font-size:14px; font-weight:500; margin:0; }
 .settings-question-card .q-actions{ display:flex; gap:6px; flex-shrink:0; }
