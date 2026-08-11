@@ -384,7 +384,8 @@ input,textarea{ font-family:inherit; }
 .sector-status svg{ width:21px; height:21px; }
 .sector-card.is-done .sector-status{ background: var(--ok-soft); color: var(--ok); }
 .sector-body{ flex:1; min-width:0; }
-.sector-name{ margin:0; font-family: var(--font-display); font-weight:700; font-size:17px; letter-spacing:-0.01em; color: var(--ink); }
+.sector-name{ margin:0; font-family: var(--font-display); font-weight:500; font-size:17px; letter-spacing:-0.01em; color: var(--ink); }
+.sector-meta .meta-responsavel{ color: var(--ok); font-weight:600; }
 .sector-meta{ margin:4px 0 0; font-size:12.5px; color:var(--ink-muted); font-family:var(--font-mono); }
 .sector-chevron{ color: var(--ink-faint); flex-shrink:0; }
 .sector-chevron svg{ width:18px; height:18px; }
@@ -488,20 +489,18 @@ input,textarea{ font-family:inherit; }
 .history-toolbar-label svg{ width:14px; height:14px; }
 
 .filter-chips{
-  display:flex; flex-wrap:nowrap; gap:8px; overflow-x:auto;
+  display:flex; flex-wrap:wrap; gap:8px;
   margin: 0 -2px; padding: 2px 2px 4px;
-  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
 }
-.filter-chips::-webkit-scrollbar{ display:none; }
 .filter-chip{
-  flex:0 0 auto; scroll-snap-align:start; white-space:nowrap;
+  flex:0 0 auto; white-space:nowrap;
   border:1.5px solid var(--line); background: var(--surface-2); color: var(--ink-muted);
-  font-weight:600; font-size:13px; padding:9px 15px; border-radius: var(--radius-pill);
+  font-weight:600; font-size:12.5px; padding:8px 13px; border-radius: var(--radius-pill);
   cursor:pointer; transition: all var(--dur-fast) var(--ease); display:inline-flex; align-items:center; gap:6px;
 }
 .filter-chip svg{ width:14px; height:14px; }
 .filter-chip.is-selected{ background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
-.filter-chip--icon{ padding:9px 14px 9px 12px; }
+.filter-chip--icon{ padding:8px 12px 8px 11px; }
 .filter-custom{ display:flex; align-items:flex-end; gap:10px; margin-top:12px; }
 .filter-custom.hidden{ display:none; }
 
