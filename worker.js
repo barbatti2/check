@@ -112,7 +112,8 @@ async function handleResumir(request, env) {
           contents: [{ role: "user", parts: [{ text: userContent }] }],
           generationConfig: {
             temperature: 0.3,
-            responseMimeType: "application/json"
+            responseMimeType: "application/json",
+            maxOutputTokens: 4096
           }
         })
       });
@@ -133,14 +134,27 @@ async function handleResumir(request, env) {
     }
 
     const data = await resp.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const candidate = data?.candidates?.[0];
+    const text = candidate?.content?.parts?.[0]?.text;
     if (!text) {
+      if (candidate?.finishReason === "MAX_TOKENS") {
+        return jsonResponse(502, { error: "O resumo ficou grande demais e foi cortado pela IA. Tente com menos pendências de cada vez." });
+      }
       return jsonResponse(502, { error: "A IA não retornou nenhum conteúdo." });
     }
 
+    // Às vezes o modelo ainda embrulha o JSON em ```json ... ``` mesmo
+    // pedindo responseMimeType "application/json" — limpa isso antes de
+    // tentar interpretar, em vez de falhar direto.
+    const cleanText = text
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+
     let parsed;
     try {
-      parsed = JSON.parse(text);
+      parsed = JSON.parse(cleanText);
     } catch {
       return jsonResponse(502, { error: "A IA não retornou um JSON válido.", raw: text });
     }
