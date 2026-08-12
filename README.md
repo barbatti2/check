@@ -54,15 +54,16 @@ O app funciona offline para navegação (app shell em cache); os dados de rondas
 4. Finalize cada setor (fica bloqueado após concluído, evitando refazer por engano) e, ao concluir todos, toque em **Ver resultado**.
 5. Exporte para Excel ou apenas conclua e volte à Home. A ronda fica salva no **Histórico**, com filtro por data.
 
-## Resumo por IA (Netlify + Gemini)
+## Resumo por IA (Cloudflare Pages + Gemini)
 
-Na tela de Resultado (e também no detalhe de um item do Histórico), quando há pendências registradas aparece o botão **"Gerar resumo com IA"**. Ele agrupa todas as pendências por setor e usa o Gemini para reescrever cada uma no padrão "Ação necessária: ...".
+Na tela de Resultado (e também no detalhe de um item do Histórico), quando há pendências registradas aparece o botão **"Gerar resumo com IA"**. Ele agrupa todas as pendências por setor (usando também a pergunta do checklist que gerou cada uma, como contexto) e usa o Gemini para reescrever cada uma no padrão "Ação necessária: ...".
 
-Para funcionar, o site precisa estar publicado no **Netlify** (usa a Netlify Function em `netlify/functions/resumir.js`):
+Para funcionar, o site precisa estar publicado no **Cloudflare Pages** (usa a Pages Function em `functions/resumir.js`, acessível em `/resumir`):
 
-1. No painel do Netlify, vá em **Site settings → Environment variables** e adicione `GEMINI_API_KEY` com sua chave da API do Gemini (nunca coloque a chave no código).
-2. Faça o deploy normalmente — o Netlify detecta `netlify.toml` e publica a function automaticamente em `/.netlify/functions/resumir`.
-3. Se o site estiver hospedado em outro lugar (ex: GitHub Pages), o botão vai mostrar erro ao chamar a IA, já que a function só existe no Netlify.
+1. Crie o projeto no Cloudflare Pages conectado a este repositório (Framework preset: **None**, build command: vazio, build output directory: `.`).
+2. No painel do projeto, vá em **Settings → Environment variables** e adicione `GEMINI_API_KEY` com sua chave da API do Gemini (nunca coloque a chave no código).
+3. Faça um novo deploy (**Deployments → Retry deployment**, ou um novo push) para a variável entrar em vigor.
+4. Se o site estiver hospedado em outro lugar (ex: GitHub Pages), o botão vai mostrar erro ao chamar a IA, já que a function só existe onde o Cloudflare Pages publicar.
 
 ## Estrutura de arquivos
 
@@ -71,11 +72,8 @@ pet-ronda/
 ├── index.html
 ├── manifest.json
 ├── sw.js
-├── netlify.toml
-├── package.json
-├── netlify/
-│   └── functions/
-│       └── resumir.js      ← chama a API do Gemini (usa GEMINI_API_KEY)
+├── functions/
+│   └── resumir.js          ← Cloudflare Pages Function; chama a API do Gemini (usa GEMINI_API_KEY)
 ├── css/style.css
 ├── js/
 │   ├── firebase-init.js   ← cole aqui suas credenciais
