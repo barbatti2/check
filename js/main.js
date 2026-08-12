@@ -755,6 +755,7 @@ async function runAiSummary(ronda, ids) {
     const payload = {
       pendencias: pendencias.map(p => ({
         setor: p.sectorName || "Setor",
+        pergunta: p.questionText || "",
         texto: p.descricao || ""
       }))
     };
