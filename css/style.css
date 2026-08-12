@@ -508,7 +508,7 @@ input,textarea{ font-family:inherit; }
 .priority-badge.Baixa{ background: var(--ok-soft); color: var(--ok); }
 .priority-badge.Média{ background: var(--warn-soft); color: var(--warn); }
 .priority-badge.Alta{ background: var(--bad-soft); color: var(--bad); }
-.pendencia-desc{ margin: 4px 0 8px; font-size:14px; font-weight:500; }
+.pendencia-desc{ margin: 4px 0 8px; font-size:14px; font-weight:500; white-space: pre-line; }
 .pendencia-meta{ display:flex; gap:14px; font-size:12px; color:var(--ink-muted); }
 .pendencia-meta span{ display:inline-flex; align-items:center; gap:5px; }
 .pendencia-meta svg{ width:13px; height:13px; }
@@ -526,7 +526,7 @@ input,textarea{ font-family:inherit; }
 .recap-count-badge.Média{ background: var(--warn-soft); color: var(--warn); }
 .recap-count-badge.Alta{ background: var(--bad-soft); color: var(--bad); }
 .recap-items{ margin:0; padding-left:18px; display:flex; flex-direction:column; gap:5px; }
-.recap-items li{ font-size:13px; color: var(--ink); line-height:1.4; }
+.recap-items li{ font-size:13px; color: var(--ink); line-height:1.4; white-space: pre-line; }
 
 /* Resumo gerado por IA */
 .btn-ai-summary{ width:100%; }
