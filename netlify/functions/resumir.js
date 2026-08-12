@@ -8,7 +8,11 @@
 // Netlify (Site settings → Environment variables). A chave NUNCA fica no
 // código — só é lida em tempo de execução via process.env.
 
-const GEMINI_MODEL = "gemini-1.5-flash";
+// Modelos tentados em ordem — o Google costuma aposentar modelos do Gemini
+// com relativa frequência. Se o primeiro da lista deixar de existir (erro
+// 404 "not found"), tenta automaticamente o próximo, sem precisar mexer
+// no código de novo.
+const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"];
 
 const SYSTEM_PROMPT = `
 Você organiza pendências de um checklist de loja (pet shop). Você recebe uma
@@ -74,25 +78,38 @@ exports.handler = async function handler(event) {
     })
     .join("\n");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const url = (model) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   try {
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [{ role: "user", parts: [{ text: userContent }] }],
-        generationConfig: {
-          temperature: 0.3,
-          responseMimeType: "application/json"
-        }
-      })
-    });
+    let resp = null;
+    let lastErrorText = "";
+    for (const model of GEMINI_MODELS) {
+      resp = await fetch(url(model), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: [{ role: "user", parts: [{ text: userContent }] }],
+          generationConfig: {
+            temperature: 0.3,
+            responseMimeType: "application/json"
+          }
+        })
+      });
 
-    if (!resp.ok) {
-      const details = await resp.text();
-      return jsonResponse(502, { error: "Erro ao chamar a API do Gemini.", details });
+      if (resp.ok) break;
+
+      lastErrorText = await resp.text();
+      // Só tenta o próximo modelo se o erro for "modelo não encontrado"
+      // (404) — outros erros (chave inválida, cota, etc.) não vão sumir
+      // trocando de modelo, então já retorna o erro real.
+      if (resp.status !== 404) {
+        return jsonResponse(502, { error: "Erro ao chamar a API do Gemini.", details: lastErrorText });
+      }
+    }
+
+    if (!resp || !resp.ok) {
+      return jsonResponse(502, { error: "Nenhum modelo do Gemini disponível no momento.", details: lastErrorText });
     }
 
     const data = await resp.json();
