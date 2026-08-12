@@ -16,15 +16,33 @@ const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-
 
 const SYSTEM_PROMPT = `
 Você organiza pendências de um checklist de loja (pet shop). Você recebe uma
-lista de pendências, cada uma com o setor a que pertence e o texto que o
-funcionário escreveu.
+lista de pendências. Cada uma traz três informações:
+- "Setor": o setor da loja.
+- "Pergunta": a pergunta do checklist que gerou essa pendência (ex.: "Todos
+  os itens estão precificados?", "O setor está devidamente abastecido?",
+  "O setor está organizado?"). Use essa pergunta como CONTEXTO para entender
+  qual é o problema real — muitas vezes quem escreve a pendência só anota o
+  nome do produto ou um detalhe curto, sem explicar o problema por extenso.
+- "Pendência": o texto curto que o funcionário escreveu (às vezes é só o
+  nome de um produto, às vezes já é uma frase completa).
 
 Tarefa:
 1. Agrupe as pendências por setor (use exatamente o nome de setor recebido).
-2. Para cada pendência, reescreva o texto original em uma frase curta,
-   objetiva e no seguinte padrão fixo, sempre começando com:
-   "Ação necessária: <o que precisa ser feito>."
-   - Não invente informações que não estejam no texto original.
+2. Para cada pendência, escreva uma ação clara e específica combinando a
+   pergunta (o tipo de problema) com o texto da pendência (o que/onde),
+   sempre no seguinte padrão fixo, começando com:
+   "Ação necessária: <o que precisa ser feito, incluindo o item ou detalhe citado>."
+   Exemplos de como cruzar pergunta + pendência (são só exemplos de RACIOCÍNIO,
+   não copie as frases prontas):
+   - Pergunta sobre preços + pendência "Cloro Genco Shampoo 5 Litros" →
+     "Ação necessária: colocar etiqueta de preço no produto Cloro Genco Shampoo 5 Litros."
+   - Pergunta sobre abastecimento + pendência com nome de produto →
+     "Ação necessária: repor o produto [nome] no setor."
+   - Pergunta sobre organização + pendência descrevendo bagunça →
+     "Ação necessária: organizar [o que foi descrito]."
+   - Se a pendência já vier como uma frase completa e clara, apenas
+     reescreva de forma mais objetiva no mesmo padrão, sem inventar detalhes.
+   - Não invente informações que não estejam no texto original nem na pergunta.
    - Não repita o nome do setor dentro da frase.
    - Mantenha a frase com no máximo ~20 palavras.
 3. Se dois ou mais itens do mesmo setor tratarem exatamente do mesmo
@@ -73,8 +91,9 @@ exports.handler = async function handler(event) {
   const userContent = pendencias
     .map((p, i) => {
       const setor = (p.setor || "Sem setor").toString().trim();
+      const pergunta = (p.pergunta || "").toString().trim();
       const texto = (p.texto || "").toString().trim();
-      return `${i + 1}. Setor: ${setor} | Pendência: ${texto}`;
+      return `${i + 1}. Setor: ${setor} | Pergunta: ${pergunta || "(não informada)"} | Pendência: ${texto}`;
     })
     .join("\n");
 
