@@ -795,10 +795,6 @@ function renderAiSummaryInto(resultBox, data) {
   `).join("");
 }
 
-function generateAiSummaryFlow() {
-  runAiSummary(state.currentRonda, { btn: "btn-generate-ai-summary", result: "ai-summary-result" });
-}
-
 function renderSummary(ronda, opts = {}) {
   $("#summary-date-label").textContent = fmtDateShort(ronda.startedAt);
   $("#score-percent").textContent = `${ronda.score ?? 0}%`;
@@ -808,14 +804,6 @@ function renderSummary(ronda, opts = {}) {
   $("#summary-pendencias-count").textContent = (ronda.pendencias || []).length;
 
   renderSectorRecap(ronda);
-
-  // Reseta o resumo por IA a cada abertura do Resultado (não deve ficar
-  // um resumo antigo de outro checklist aparecendo aqui).
-  const hasPendencias = (ronda.pendencias || []).length > 0;
-  $("#ai-summary-block").classList.toggle("hidden", !hasPendencias);
-  $("#ai-summary-result").classList.add("hidden");
-  $("#ai-summary-result").innerHTML = "";
-  $("#btn-generate-ai-summary").classList.remove("is-loading");
 
   const list = $("#summary-pendencias-list");
   list.innerHTML = "";
@@ -1473,7 +1461,6 @@ function wireEvents() {
   $("#btn-finish-sector").addEventListener("click", finishSector);
   $("#btn-finish-ronda").addEventListener("click", finishRondaFlow);
   $("#btn-delete-ronda").addEventListener("click", deleteCurrentRondaFlow);
-  $("#btn-generate-ai-summary").addEventListener("click", generateAiSummaryFlow);
   $("#btn-finish-summary").addEventListener("click", () => {
     const returnToHistory = state.editingFromHistory;
     state.currentRonda = null;
