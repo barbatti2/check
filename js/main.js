@@ -759,7 +759,7 @@ async function runAiSummary(ronda, ids) {
         texto: p.descricao || ""
       }))
     };
-    const resp = await fetch("/.netlify/functions/resumir", {
+    const resp = await fetch("/resumir", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
