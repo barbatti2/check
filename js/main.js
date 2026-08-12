@@ -769,7 +769,7 @@ async function runAiSummary(ronda, ids) {
     renderAiSummaryInto(resultBox, data);
   } catch (e) {
     console.error(e);
-    resultBox.innerHTML = `<div class="ai-summary-error">Não foi possível gerar o resumo com IA agora. Tente novamente.</div>`;
+    resultBox.innerHTML = `<div class="ai-summary-error">Não foi possível gerar o resumo com IA agora (${e.message || "erro desconhecido"}). Tente novamente.</div>`;
     showToast("Erro ao gerar resumo com IA.");
   } finally {
     btn.classList.remove("is-loading");
