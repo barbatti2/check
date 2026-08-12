@@ -1,4 +1,4 @@
-# Ronda · Checklist da Loja
+# Ronda · Checklist da Loja---
 
 PWA pessoal para rondas diárias em loja pet, antes do checklist oficial. Setores configuráveis, perguntas com resposta rápida, pendências com responsável/prazo/prioridade, progresso em tempo real, histórico com filtro por data e exportação para Excel. Dados salvos no Firestore.
 
