@@ -158,14 +158,20 @@ async function handleResumir(request, env) {
       return jsonResponse(502, { error: "A IA não retornou nenhum conteúdo." });
     }
 
-    // Às vezes o modelo ainda embrulha o JSON em ```json ... ``` mesmo
-    // pedindo responseMimeType "application/json" — limpa isso antes de
-    // tentar interpretar, em vez de falhar direto.
-    const cleanText = text
+    // Às vezes o modelo ainda embrulha o JSON em ```json ... ``` ou coloca
+    // um texto de introdução antes/depois, mesmo pedindo responseMimeType
+    // "application/json" — limpa tudo isso antes de tentar interpretar,
+    // pegando só o trecho entre a primeira "{" e a última "}".
+    let cleanText = text
       .trim()
       .replace(/^```(?:json)?\s*/i, "")
       .replace(/```\s*$/i, "")
       .trim();
+    const firstBrace = cleanText.indexOf("{");
+    const lastBrace = cleanText.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      cleanText = cleanText.slice(firstBrace, lastBrace + 1);
+    }
 
     let parsed;
     try {
