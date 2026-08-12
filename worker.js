@@ -26,29 +26,44 @@ lista de pendências. Cada uma traz três informações:
 - "Setor": o setor da loja.
 - "Pergunta": a pergunta do checklist que gerou essa pendência (ex.: "Todos
   os itens estão precificados?", "O setor está devidamente abastecido?",
-  "O setor está organizado?"). Use essa pergunta como CONTEXTO para entender
-  qual é o problema real — muitas vezes quem escreve a pendência só anota o
-  nome do produto ou um detalhe curto, sem explicar o problema por extenso.
-- "Pendência": o texto curto que o funcionário escreveu (às vezes é só o
-  nome de um produto, às vezes já é uma frase completa).
+  "O setor está organizado?"). Essa pergunta diz qual é o TIPO de problema.
+- "Pendência": o texto curto que o funcionário escreveu. Na maioria das
+  vezes é SÓ o nome de um produto ou um detalhe curto — não é uma frase
+  explicando o problema.
+
+Regra mais importante, leia com atenção:
+NUNCA responda apenas colando o texto da pendência depois de "Ação
+necessária:". Isso é ERRADO e é o erro mais comum que você comete — sua
+tarefa é TRADUZIR a pergunta em uma ação (um verbo + o que fazer), e só
+usar o texto da pendência para dizer EM QUAL item/lugar.
+
+Como decidir a ação a partir da pergunta (use como referência, adapte para
+perguntas parecidas mesmo que o texto não seja idêntico):
+- Pergunta é sobre preço/etiqueta/precificação → ação é "colocar etiqueta de
+  preço em" / "verificar o preço de".
+- Pergunta é sobre abastecimento/estoque/reposição → ação é "repor" /
+  "abastecer o estoque de".
+- Pergunta é sobre organização/limpeza/gôndola → ação é "organizar" /
+  "reorganizar a gôndola de" / "limpar".
+- Pergunta não se encaixa em nenhuma acima → deduza a ação mais natural
+  possível a partir do sentido da própria pergunta.
+
+Exemplo completo (siga esse padrão de raciocínio):
+- Setor: Higiene e Beleza
+- Pergunta: Todos os itens estão precificados?
+- Pendência: Cloro Genco Shampoo 5 Litros
+- ERRADO (não faça isso): "Ação necessária: Cloro Genco Shampoo 5 Litros."
+- CERTO: "Ação necessária: colocar etiqueta de preço no produto Cloro Genco Shampoo 5 Litros."
 
 Tarefa:
 1. Agrupe as pendências por setor (use exatamente o nome de setor recebido).
-2. Para cada pendência, escreva uma ação clara e específica combinando a
-   pergunta (o tipo de problema) com o texto da pendência (o que/onde),
-   sempre no seguinte padrão fixo, começando com:
-   "Ação necessária: <o que precisa ser feito, incluindo o item ou detalhe citado>."
-   Exemplos de como cruzar pergunta + pendência (são só exemplos de RACIOCÍNIO,
-   não copie as frases prontas):
-   - Pergunta sobre preços + pendência "Cloro Genco Shampoo 5 Litros" →
-     "Ação necessária: colocar etiqueta de preço no produto Cloro Genco Shampoo 5 Litros."
-   - Pergunta sobre abastecimento + pendência com nome de produto →
-     "Ação necessária: repor o produto [nome] no setor."
-   - Pergunta sobre organização + pendência descrevendo bagunça →
-     "Ação necessária: organizar [o que foi descrito]."
-   - Se a pendência já vier como uma frase completa e clara, apenas
-     reescreva de forma mais objetiva no mesmo padrão, sem inventar detalhes.
-   - Não invente informações que não estejam no texto original nem na pergunta.
+2. Para cada pendência, escreva a ação seguindo a regra acima, sempre no
+   padrão fixo, começando com "Ação necessária: ...":
+   - Se a pendência já vier como uma frase completa e clara descrevendo o
+     problema (já tem um verbo, já explica o que fazer), apenas reescreva
+     de forma mais objetiva no mesmo padrão, sem inventar detalhes novos.
+   - Não invente informações que não estejam no texto original nem na
+     pergunta (o nome do produto/detalhe deve vir exatamente do texto).
    - Não repita o nome do setor dentro da frase.
    - Mantenha a frase com no máximo ~20 palavras.
 3. Se dois ou mais itens do mesmo setor tratarem exatamente do mesmo
