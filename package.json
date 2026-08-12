@@ -1,7 +1,0 @@
-{
-  "name": "checklist-app",
-  "private": true,
-  "engines": {
-    "node": ">=18"
-  }
-}
