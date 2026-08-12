@@ -765,7 +765,10 @@ async function runAiSummary(ronda, ids) {
       body: JSON.stringify(payload)
     });
     const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || "Falha ao gerar o resumo.");
+    if (!resp.ok) {
+      if (data.raw) console.error("Resposta bruta da IA:", data.raw);
+      throw new Error(data.error || "Falha ao gerar o resumo.");
+    }
     renderAiSummaryInto(resultBox, data);
   } catch (e) {
     console.error(e);
