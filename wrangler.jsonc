@@ -1,0 +1,10 @@
+{
+  "name": "checklist",
+  "compatibility_date": "2026-08-01",
+  "main": "worker.js",
+  "workers_dev": true,
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS"
+  }
+}
