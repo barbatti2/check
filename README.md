@@ -65,7 +65,7 @@ Para funcionar, o site precisa estar publicado no **Cloudflare Pages** (usa a Pa
 3. Faça um novo deploy (**Deployments → Retry deployment**, ou um novo push) para a variável entrar em vigor.
 4. Se o site estiver hospedado em outro lugar (ex: GitHub Pages), o botão vai mostrar erro ao chamar a IA, já que a function só existe onde o Cloudflare Pages publicar.
 
-## Estrutura de arquivos
+## Estrutura de arquivos- ___
 
 ```
 pet-ronda/
