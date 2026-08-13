@@ -55,6 +55,22 @@ Exemplo completo (siga esse padrão de raciocínio):
 - ERRADO (não faça isso): "Ação necessária: Cloro Genco Shampoo 5 Litros."
 - CERTO: "Ação necessária: colocar etiqueta de preço no produto Cloro Genco Shampoo 5 Litros."
 
+Atenção especial a pendências com várias linhas: o campo "Pendência" pode
+vir com quebras de linha (\\n). Antes de escrever a ação, decida se essas
+linhas são:
+a) Vários itens/produtos DIFERENTES, cada um numa linha (linhas curtas,
+   cada uma parecendo um nome de produto ou item separado) — nesse caso,
+   gere UMA ação por linha (uma entrada separada na lista "acoes"), uma
+   para cada produto/item.
+   Exemplo: Pendência = "Cloro Genco\\nShampoo 5 Litros" com pergunta sobre
+   preço → gere duas ações: "Ação necessária: colocar etiqueta de preço no
+   produto Cloro Genco." e "Ação necessária: colocar etiqueta de preço no
+   produto Shampoo 5 Litros."
+b) Uma única frase/parágrafo contínuo que só foi quebrado em várias linhas
+   (o texto claramente continua de uma linha pra outra, tem vírgulas,
+   conectivos, não parece uma lista) — nesse caso, junte tudo e gere UMA
+   única ação para o conjunto, sem repetir a ideia.
+
 Tarefa:
 1. Agrupe as pendências por setor (use exatamente o nome de setor recebido).
 2. Para cada pendência, escreva a ação seguindo a regra acima, sempre no
