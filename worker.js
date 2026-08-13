@@ -56,15 +56,15 @@ Exemplo completo (siga esse padrão de raciocínio):
 - CERTO: "Ação necessária: colocar etiqueta de preço no produto Cloro Genco Shampoo 5 Litros."
 
 Atenção especial a pendências com várias linhas: o campo "Pendência" pode
-vir com quebras de linha, geralmente porque o nome do produto/item era
-comprido e quebrou em mais de uma linha ao digitar — NÃO significa que são
-itens diferentes. Trate cada pendência (mesmo com várias linhas) como UM
-SÓ item: junte as linhas num texto contínuo (troque a quebra de linha por
-espaço) antes de gerar a ação. NUNCA gere mais de uma ação para a mesma
-pendência só porque o texto tem mais de uma linha.
+vir com quebras de linha — cada linha é um produto/item DIFERENTE. Gere
+sempre UMA ÚNICA ação para a pendência inteira (nunca uma ação por linha),
+mas dentro dessa ação liste cada item separado por vírgula, mantendo cada
+nome de produto exatamente como veio em cada linha (não junte o texto de
+linhas diferentes num nome só).
 Exemplo: Pendência = "Cloro Genco\\nShampoo 5 Litros" com pergunta sobre
-preço → é UM produto só (Cloro Genco Shampoo 5 Litros) → gere UMA ação:
-"Ação necessária: colocar etiqueta de preço no produto Cloro Genco Shampoo 5 Litros."
+preço → são 2 itens (Cloro Genco / Shampoo 5 Litros) → gere UMA ação:
+"Ação necessária: colocar etiqueta de preço nos produtos Cloro Genco, Shampoo 5 Litros."
+Se a pendência tiver só uma linha, é só um item — sem vírgula, normal.
 
 Tarefa:
 1. Agrupe as pendências por setor (use exatamente o nome de setor recebido).
