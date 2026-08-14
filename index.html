@@ -66,6 +66,15 @@
           <span class="menu-card-chevron"><i data-lucide="chevron-right"></i></span>
         </button>
 
+        <button id="btn-avaliacoes" class="menu-card">
+          <span class="menu-card-icon"><i data-lucide="user-check"></i></span>
+          <span class="menu-card-text">
+            <span class="menu-card-title">Avaliações</span>
+            <span class="menu-card-sub">Meta diária por colaborador</span>
+          </span>
+          <span class="menu-card-chevron"><i data-lucide="chevron-right"></i></span>
+        </button>
+
         <button id="btn-history" class="menu-card">
           <span class="menu-card-icon"><i data-lucide="history"></i></span>
           <span class="menu-card-text">
@@ -211,6 +220,22 @@
   </section>
 </main>
 
+<!-- ============ AVALIAÇÕES ============ -->
+<main id="screen-avaliacoes" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="screen-home"><i data-lucide="chevron-left"></i></button>
+    <div class="topbar-title">
+      <h2>Avaliações</h2>
+      <p id="avaliacoes-date-label" class="topbar-sub"></p>
+    </div>
+    <button class="icon-btn" id="btn-goto-colaboradores"><i data-lucide="settings-2"></i></button>
+  </header>
+
+  <section class="section-block">
+    <div id="avaliacoes-list" class="card-list"></div>
+  </section>
+</main>
+
 <!-- ============ HISTÓRICO ============ -->
 <main id="screen-history" class="screen">
   <header class="topbar">
@@ -281,6 +306,38 @@
     <div class="add-inline">
       <input type="text" id="input-new-sector" placeholder="Nome do novo setor" />
       <button id="btn-add-sector" class="icon-btn icon-btn-filled"><i data-lucide="plus"></i></button>
+    </div>
+  </section>
+
+  <section class="section-block">
+    <button id="btn-open-colaboradores" class="menu-card">
+      <span class="menu-card-icon"><i data-lucide="user-check"></i></span>
+      <span class="menu-card-text">
+        <span class="menu-card-title">Colaboradores</span>
+        <span class="menu-card-sub">Nomes e meta diária das Avaliações</span>
+      </span>
+      <span class="menu-card-chevron"><i data-lucide="chevron-right"></i></span>
+    </button>
+  </section>
+</main>
+
+<!-- ============ CONFIGURAÇÕES · COLABORADORES ============ -->
+<main id="screen-settings-colaboradores" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="screen-settings"><i data-lucide="chevron-left"></i></button>
+    <div class="topbar-title"><h2>Colaboradores</h2><p class="topbar-sub">Nome e meta diária</p></div>
+    <span class="topbar-spacer"></span>
+  </header>
+
+  <section class="section-block">
+    <div id="settings-colaboradores-list" class="card-list"></div>
+  </section>
+
+  <section class="section-block">
+    <div class="add-inline">
+      <input type="text" id="input-new-colab-name" placeholder="Nome do colaborador" />
+      <input type="number" id="input-new-colab-meta" placeholder="Meta" min="0" style="max-width:84px;" />
+      <button id="btn-add-colaborador" class="icon-btn icon-btn-filled"><i data-lucide="plus"></i></button>
     </div>
   </section>
 </main>
