@@ -966,8 +966,8 @@ function renderHistory() {
       <div class="history-score ${scoreClass(r.score || 0)}">${r.score ?? 0}%</div>
       <div class="history-body">
         <div class="history-date-row">
-          <p class="history-date">${fmtDateShort(r.startedAt)}</p>
           ${historyTypeTagHtml(r)}
+          <p class="history-date">${fmtDateShort(r.startedAt)}</p>
         </div>
         <p class="history-sub">${r.conformCount ?? 0} conformes · ${r.nonConformCount ?? 0} não conformes</p>
         <div class="history-badges">${historyBadgesHtml(r)}</div>
