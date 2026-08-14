@@ -343,8 +343,12 @@
     <p id="pendencia-question-ref" class="modal-ref"></p>
 
     <div class="field">
-      <label for="pendencia-descricao">Descrição</label>
-      <textarea id="pendencia-descricao" rows="3" placeholder="Descreva o que precisa ser corrigido"></textarea>
+      <label for="pendencia-item-input">Itens / produtos</label>
+      <div class="item-add-row">
+        <input type="text" id="pendencia-item-input" placeholder="Ex: Cloro Genco Shampoo 5 Litros" />
+        <button type="button" id="btn-add-pendencia-item" class="icon-btn icon-btn-filled"><i data-lucide="plus"></i></button>
+      </div>
+      <div id="pendencia-items-list" class="pendencia-items-list"></div>
     </div>
 
     <div class="field">
