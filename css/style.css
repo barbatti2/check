@@ -1,8 +1,8 @@
 /* ============================================================
    RONDA — design tokens
-   Palette: Blueberry (azul profundo) + Cream Soda — dupla azul/creme
-   boutique pet/retail. Tema sempre claro — não segue o modo escuro
-   do sistema, para manter a identidade visual consistente.
+   Palette: Digital Lilac (#D9B8FF) + Chrome Black (#0D0D0D)
+   Tema sempre claro — não segue o modo escuro do sistema, para
+   manter a identidade visual consistente.
    Type: Fraunces (display, soft-serif) + Plus Jakarta Sans (body)
    + IBM Plex Mono (data)
 ============================================================ */
@@ -13,18 +13,18 @@
   --surface: #FFFFFF;
   --surface-2: #F7F7F4;
   --surface-sunken: #ECECE8;
-  --ink: #1B1C19;
+  --ink: #0D0D0D;
   --ink-muted: #6E6F68;
   --ink-faint: #9B9C94;
   --line: #E4E3DD;
   --line-soft: #ECEBE5;
 
-  --accent: #243B8F;            /* Blueberry */
-  --accent-strong: #1B2E70;
-  --accent-contrast: #FFF0C9;  /* Cream Soda — texto/ícones sobre superfícies accent */
-  --accent-soft: #CDD5F2;
-  --accent-soft-2: #B9C3EC;
-  --accent-shadow: rgba(36,59,143,0.28);
+  --accent: #D9B8FF;             /* Digital Lilac */
+  --accent-strong: #B98CFF;
+  --accent-contrast: #0D0D0D;   /* Chrome Black — texto/ícones sobre superfícies accent */
+  --accent-soft: #F1E6FF;
+  --accent-soft-2: #E4D0FA;
+  --accent-shadow: rgba(157,110,255,0.32);
 
   --ok: #33604F;
   --ok-soft: #E1EAE3;
@@ -240,11 +240,11 @@ input,textarea{ font-family:inherit; }
 .home-title{
   font-family: var(--font-serif); font-weight:700; font-style:normal;
   font-size:23px; line-height:1.1; letter-spacing:-0.01em;
-  color: #fff; margin: 0;
+  color: var(--accent-contrast); margin: 0;
 }
 .home-title-underline{
   display:block; width:30px; height:3px; margin:10px 0 0;
-  border-radius: 3px; background: rgba(255,240,201,0.55);
+  border-radius: 3px; background: rgba(13,13,13,0.35);
 }
 
 /* --- tira de setores --- */
@@ -307,10 +307,10 @@ input,textarea{ font-family:inherit; }
 .menu-card--primary{
   background: var(--accent); box-shadow: 0 10px 22px -10px var(--accent-shadow);
 }
-.menu-card--primary .menu-card-icon{ background: rgba(255,240,201,0.16); color: var(--accent-contrast); }
+.menu-card--primary .menu-card-icon{ background: rgba(13,13,13,0.08); color: var(--accent-contrast); }
 .menu-card--primary .menu-card-title{ color: var(--accent-contrast); }
-.menu-card--primary .menu-card-sub{ color: rgba(255,240,201,0.75); }
-.menu-card--primary .menu-card-chevron{ color: rgba(255,240,201,0.75); }
+.menu-card--primary .menu-card-sub{ color: rgba(13,13,13,0.65); }
+.menu-card--primary .menu-card-chevron{ color: rgba(13,13,13,0.65); }
 
 
 .resume-card{
@@ -673,6 +673,40 @@ input,textarea{ font-family:inherit; }
 }
 .settings-question-card{ cursor:default; align-items:flex-start; }
 .settings-question-card .q-text{ flex:1; font-size:14px; font-weight:500; margin:0; }
+
+/* Colaboradores (Configurações) */
+.colab-meta-field{
+  display:flex; align-items:center; gap:8px; margin-top:6px;
+  font-family: var(--font-mono); font-size:11px; color: var(--ink-muted); text-transform:uppercase; letter-spacing:.03em;
+}
+.colab-meta-field input{
+  width:64px; border:1px solid var(--line); border-radius: var(--radius-sm); padding:6px 8px;
+  font-family: var(--font-body); font-size:13px; color: var(--ink); text-transform:none; letter-spacing:normal;
+}
+.colab-meta-field input:focus{ outline:none; border-color: var(--accent); }
+
+/* Avaliações */
+.colab-card{
+  background: var(--surface); border-radius: var(--radius-lg);
+  padding: 16px 18px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
+}
+.colab-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.colab-name{ font-family: var(--font-display); font-weight:600; font-size:16px; color: var(--ink); }
+.colab-meta{ font-family: var(--font-mono); font-size:12.5px; color: var(--ink-muted); font-weight:600; }
+.colab-meta.is-done{ color: var(--ok-vivid); }
+.colab-progress-track{
+  height:6px; border-radius: var(--radius-pill); background: var(--surface-2); margin-top:10px; overflow:hidden;
+}
+.colab-progress-fill{
+  height:100%; border-radius: var(--radius-pill); background: var(--accent-strong);
+  transition: width var(--dur-mid) var(--ease);
+}
+.colab-progress-fill.is-done{ background: var(--ok-vivid); }
+.colab-counter{
+  display:flex; align-items:center; justify-content:center; gap:22px; margin-top:14px;
+}
+.colab-counter .icon-btn{ width:44px; height:44px; }
+.colab-count{ font-family: var(--font-display); font-weight:700; font-size:22px; min-width:36px; text-align:center; color: var(--ink); }
 .settings-question-card .q-actions{ display:flex; gap:6px; flex-shrink:0; }
 .settings-question-card .q-actions .icon-btn{ width:32px; height:32px; }
 .settings-question-card .q-actions .icon-btn svg{ width:15px; height:15px; }
