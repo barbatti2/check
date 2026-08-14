@@ -679,6 +679,22 @@ input,textarea{ font-family:inherit; }
 }
 .add-inline--stack textarea:focus{ outline:none; border-color: var(--accent); }
 
+.item-add-row{ display:flex; gap:8px; }
+.item-add-row input{
+  flex:1; border:1px solid var(--line); border-radius: var(--radius-md); padding:12px 14px;
+  background: var(--surface); font-size:14px; color:var(--ink);
+}
+.item-add-row input:focus{ outline:none; border-color: var(--accent); }
+.pendencia-items-list{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+.pendencia-item-row{
+  display:flex; align-items:center; gap:10px;
+  background: var(--surface-2); border-radius: var(--radius-md); padding:10px 12px;
+}
+.pendencia-item-row span{ flex:1; font-size:13.5px; color:var(--ink); }
+.pendencia-item-row .icon-btn{ width:28px; height:28px; background:transparent; box-shadow:none; }
+.pendencia-item-row .icon-btn svg{ width:15px; height:15px; }
+.pendencia-items-empty{ font-size:12.5px; color:var(--ink-faint); margin-top:8px; }
+
 /* ---------------- Modals ---------------- */
 .modal-overlay{
   position:fixed; inset:0; z-index:50; display:flex; align-items:flex-end; justify-content:center;
