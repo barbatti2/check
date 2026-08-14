@@ -36,6 +36,7 @@ const state = {
   expandedSectorIds: new Set(),      // setores com o detalhe de atingiu/não atingiu aberto (na ronda)
   editingQuestionId: null,
   pendenciaCtx: null,      // { sectorId, questionId, questionText, editingId }
+  pendenciaItems: [],      // itens/produtos adicionados na pendência atualmente aberta
   selectedPriority: null,
   confirmAction: null,
   deletePendingSectorId: null,
@@ -577,7 +578,18 @@ function openPendenciaModal(sector, question) {
   state.pendenciaCtx = { sectorId: sector.id, sectorName: sector.name, questionId: question.id, questionText: question.text, editingId: existing ? existing.id : null };
 
   $("#pendencia-question-ref").textContent = `${sector.name} · ${question.text}`;
-  $("#pendencia-descricao").value = existing ? existing.descricao : "";
+
+  // Compatível com pendências antigas (campo "descricao" em texto livre):
+  // se não existir a lista estruturada "itens" ainda, quebra o texto por
+  // linha pra já aproveitar como itens separados.
+  state.pendenciaItems = existing
+    ? (Array.isArray(existing.itens) && existing.itens.length
+        ? [...existing.itens]
+        : (existing.descricao || "").split("\n").map(s => s.trim()).filter(Boolean))
+    : [];
+  $("#pendencia-item-input").value = "";
+  renderPendenciaItemsList();
+
   $("#pendencia-responsavel").value = existing ? existing.responsavel : (sector.responsavel || "");
   $("#pendencia-prazo").value = existing ? existing.prazo : "";
   state.selectedPriority = existing ? existing.prioridade : null;
@@ -589,14 +601,44 @@ function openPendenciaModal(sector, question) {
   $("#modal-pendencia").classList.remove("hidden");
 }
 
+function renderPendenciaItemsList() {
+  const list = $("#pendencia-items-list");
+  if (!state.pendenciaItems.length) {
+    list.innerHTML = `<p class="pendencia-items-empty">Nenhum item adicionado ainda.</p>`;
+    return;
+  }
+  list.innerHTML = state.pendenciaItems.map((item, i) => `
+    <div class="pendencia-item-row">
+      <span>${item}</span>
+      <button type="button" class="icon-btn btn-remove-pendencia-item" data-idx="${i}"><i data-lucide="x"></i></button>
+    </div>
+  `).join("");
+  refreshIcons();
+  $all(".btn-remove-pendencia-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.pendenciaItems.splice(Number(btn.dataset.idx), 1);
+      renderPendenciaItemsList();
+    });
+  });
+}
+
+function addPendenciaItemFlow() {
+  const input = $("#pendencia-item-input");
+  const value = input.value.trim();
+  if (!value) return;
+  state.pendenciaItems.push(value);
+  input.value = "";
+  renderPendenciaItemsList();
+  input.focus();
+}
+
 function closePendenciaModal() {
   $("#modal-pendencia").classList.add("hidden");
   state.pendenciaCtx = null;
 }
 
 async function savePendencia() {
-  const descricao = $("#pendencia-descricao").value.trim();
-  if (!descricao) { showToast("Descreva a pendência."); return; }
+  if (!state.pendenciaItems.length) { showToast("Adicione pelo menos um item."); return; }
   if (!state.selectedPriority) { showToast("Selecione a prioridade."); return; }
 
   const ctx = state.pendenciaCtx;
@@ -607,7 +649,8 @@ async function savePendencia() {
     sectorName: ctx.sectorName,
     questionId: ctx.questionId,
     questionText: ctx.questionText,
-    descricao,
+    itens: [...state.pendenciaItems],
+    descricao: state.pendenciaItems.join("\n"), // compatibilidade com telas antigas de exibição
     responsavel: $("#pendencia-responsavel").value.trim(),
     prazo: $("#pendencia-prazo").value,
     prioridade: state.selectedPriority,
@@ -756,7 +799,10 @@ async function runAiSummary(ronda, ids) {
       pendencias: pendencias.map(p => ({
         setor: p.sectorName || "Setor",
         pergunta: p.questionText || "",
-        texto: p.descricao || ""
+        // Une os itens já separados na hora de criar a pendência (não
+        // depende mais da IA "adivinhar" onde um item termina e outro
+        // começa — isso já vem certo desde a origem dos dados).
+        texto: (Array.isArray(p.itens) && p.itens.length ? p.itens.join(", ") : p.descricao) || ""
       }))
     };
     const resp = await fetch("/resumir", {
@@ -1482,6 +1528,10 @@ function wireEvents() {
   // pendência modal
   $("#btn-save-pendencia").addEventListener("click", savePendencia);
   $("#btn-remove-pendencia").addEventListener("click", removePendencia);
+  $("#btn-add-pendencia-item").addEventListener("click", addPendenciaItemFlow);
+  $("#pendencia-item-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); addPendenciaItemFlow(); }
+  });
   $all("#pendencia-prioridade .priority-chip").forEach(chip => {
     chip.addEventListener("click", () => {
       state.selectedPriority = chip.dataset.value;
