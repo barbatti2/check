@@ -944,10 +944,14 @@ function historyBadgesHtml(ronda) {
   const secOk = sec.total > 0 && sec.done === sec.total;
   const pendOk = pend.total === 0 || pend.resolved === pend.total;
   return `
-    <span class="hist-badge"><i data-lucide="${(ronda.type || "weekly") === "daily" ? "sun" : "calendar-days"}"></i>${checklistTypeLabel(ronda)}</span>
     <span class="hist-badge ${secOk ? "is-ok" : ""}"><i data-lucide="layers"></i>${sec.done}/${sec.total} setores</span>
     <span class="hist-badge ${pendOk ? "is-ok" : "is-warn"}"><i data-lucide="${pend.total === 0 ? "check-circle-2" : "flag"}"></i>${pend.total === 0 ? "Sem pendências" : `${pend.resolved}/${pend.total} resolvidas`}</span>
   `;
+}
+
+function historyTypeTagHtml(ronda) {
+  const isDaily = (ronda.type || "weekly") === "daily";
+  return `<span class="hist-type-tag ${isDaily ? "is-daily" : "is-weekly"}"><i data-lucide="${isDaily ? "sun" : "calendar-days"}"></i>${checklistTypeLabel(ronda)}</span>`;
 }
 
 function renderHistory() {
@@ -961,7 +965,10 @@ function renderHistory() {
     card.innerHTML = `
       <div class="history-score ${scoreClass(r.score || 0)}">${r.score ?? 0}%</div>
       <div class="history-body">
-        <p class="history-date">${fmtDateShort(r.startedAt)}</p>
+        <div class="history-date-row">
+          <p class="history-date">${fmtDateShort(r.startedAt)}</p>
+          ${historyTypeTagHtml(r)}
+        </div>
         <p class="history-sub">${r.conformCount ?? 0} conformes · ${r.nonConformCount ?? 0} não conformes</p>
         <div class="history-badges">${historyBadgesHtml(r)}</div>
       </div>
@@ -1027,6 +1034,8 @@ function deleteHistoryRondaFlow(ronda) {
 
 function openHistoryDetail(ronda) {
   $("#history-detail-title").textContent = fmtDateLabel(ronda.startedAt);
+  $("#history-detail-type-tag").innerHTML = historyTypeTagHtml(ronda);
+  refreshIcons();
   const body = $("#history-detail-body");
   body.innerHTML = `
     <div class="score-card" style="margin-bottom:14px;">
