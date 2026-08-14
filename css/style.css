@@ -588,8 +588,8 @@ input,textarea{ font-family:inherit; }
 
 .history-card{
   background: var(--surface); border-radius: var(--radius-lg);
-  padding: 15px 16px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
-  display:flex; align-items:center; gap:14px; cursor:pointer;
+  padding: 15px 14px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
+  display:flex; align-items:center; gap:12px; cursor:pointer;
   transition: transform var(--dur-fast) var(--ease);
 }
 .history-card:active{ transform: scale(.985); }
@@ -616,11 +616,11 @@ input,textarea{ font-family:inherit; }
 
 .modal-header-title{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 
-.history-badges, .hist-status-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.history-badges, .hist-status-row{ display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
 .hist-badge{
-  display:inline-flex; align-items:center; gap:5px;
+  display:inline-flex; align-items:center; gap:4px; white-space:nowrap;
   background: var(--surface-2); color: var(--ink-muted);
-  font-size:11px; font-weight:600; padding:5px 10px; border-radius: var(--radius-pill);
+  font-size:10.5px; font-weight:600; padding:5px 8px; border-radius: var(--radius-pill);
 }
 .hist-badge svg{ width:12px; height:12px; }
 .hist-badge.is-ok{ background: var(--ok-soft); color: var(--ok); }
