@@ -14,11 +14,11 @@
 // Cloudflare (Settings → Variables and Secrets do projeto). A chave NUNCA
 // fica no código — só é lida em tempo de execução via env.GEMINI_API_KEY.
 
-// Modelos tentados em ordem — o Google costuma aposentar modelos do Gemini
-// com relativa frequência. Se o primeiro da lista deixar de existir (erro
-// 404 "not found"), tenta automaticamente o próximo, sem precisar mexer
-// no código de novo.
-const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"];
+// Modelos tentados em ordem — "flash-lite" primeiro por ser bem mais rápido
+// (a tarefa aqui é simples o bastante pra não precisar do modelo maior).
+// Se um modelo deixar de existir (erro 404 "not found"), tenta
+// automaticamente o próximo, sem precisar mexer no código de novo.
+const GEMINI_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3.5-flash"];
 
 const SYSTEM_PROMPT = `
 Você organiza pendências de um checklist de loja (pet shop). Você recebe uma
