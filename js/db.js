@@ -261,3 +261,57 @@ export async function getHistory(dateFrom, dateTo) {
   items.sort((a, b) => (b.startedAt?.toMillis?.() || 0) - (a.startedAt?.toMillis?.() || 0));
   return items;
 }
+
+/* ---------------------- COLABORADORES / AVALIAÇÕES ---------------------- */
+
+export async function getColaboradores() {
+  const snap = await getDocs(query(collection(db, "colaboradores"), orderBy("order", "asc")));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function addColaborador(name, metaDiaria = 0) {
+  const colaboradores = await getColaboradores();
+  const order = colaboradores.length;
+  const ref = await addDoc(collection(db, "colaboradores"), {
+    name, order, metaDiaria: Number(metaDiaria) || 0
+  });
+  return ref.id;
+}
+
+export async function updateColaboradorName(id, name) {
+  await updateDoc(doc(db, "colaboradores", id), { name });
+}
+
+export async function updateColaboradorMeta(id, metaDiaria) {
+  await updateDoc(doc(db, "colaboradores", id), { metaDiaria: Number(metaDiaria) || 0 });
+}
+
+export async function deleteColaborador(id) {
+  await deleteDoc(doc(db, "colaboradores", id));
+}
+
+function todayDateKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// A avaliação do dia é um único documento por dia (id = data), com a
+// quantidade feita de cada colaborador — reseta sozinho todo dia, já que
+// cada dia novo cria/lê um documento diferente.
+export async function getTodayAvaliacao() {
+  const key = todayDateKey();
+  const snap = await getDoc(doc(db, "avaliacoes", key));
+  if (!snap.exists()) return { id: key, date: key, items: {} };
+  return { id: key, ...snap.data() };
+}
+
+export async function setColaboradorFeito(colaboradorId, feito) {
+  const key = todayDateKey();
+  const ref = doc(db, "avaliacoes", key);
+  // Usa notação de ponto no merge pra atualizar só esse colaborador dentro
+  // do mapa "items", sem sobrescrever os outros já salvos no mesmo dia.
+  await setDoc(ref, {
+    date: key,
+    [`items.${colaboradorId}.feito`]: Math.max(0, feito)
+  }, { merge: true });
+}

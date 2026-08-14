@@ -31,6 +31,8 @@ const state = {
   settingsSectorId: null,
   settingsQuestionType: "weekly",    // aba ativa na tela de perguntas das configurações
   settingsResponsavelFilter: null,   // nome selecionado no filtro por responsável
+  colaboradores: [],
+  avaliacaoHoje: null,       // { id, date, items: { [colaboradorId]: { feito } } }
   reorderMode: false,                // true = tela de setores em modo de reordenar
   draggingSectorId: null,            // setor sendo arrastado no momento (para renderizar como "fantasma")
   expandedSectorIds: new Set(),      // setores com o detalhe de atingiu/não atingiu aberto (na ronda)
@@ -1315,6 +1317,184 @@ function toggleReorderMode() {
   renderSettingsSectors();
 }
 
+/* ============================================================
+   AVALIAÇÕES (meta diária por colaborador)
+============================================================ */
+async function loadColaboradores() {
+  state.colaboradores = await store.getColaboradores();
+}
+
+async function ensureColaboradoresLoaded() {
+  if (!state.colaboradores.length) await loadColaboradores();
+}
+
+async function openAvaliacoes() {
+  if (!requireDb()) return;
+  showScreen("screen-avaliacoes");
+  $("#avaliacoes-date-label").textContent = fmtDateLabel(new Date());
+  try {
+    await loadColaboradores(); // sempre recarrega — a meta pode ter mudado em Configurações
+    state.avaliacaoHoje = await store.getTodayAvaliacao();
+    renderAvaliacoes();
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao carregar avaliações.");
+  }
+}
+
+function renderAvaliacoes() {
+  const list = $("#avaliacoes-list");
+
+  if (!state.colaboradores.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <i data-lucide="user-check"></i>
+        <p>Nenhum colaborador cadastrado ainda.</p>
+      </div>
+      <button id="btn-empty-goto-colaboradores" class="btn btn-secondary" style="width:100%; margin-top:14px;">Cadastrar colaboradores</button>
+    `;
+    refreshIcons();
+    $("#btn-empty-goto-colaboradores").addEventListener("click", openSettingsColaboradores);
+    return;
+  }
+
+  list.innerHTML = state.colaboradores.map(colab => {
+    const feito = state.avaliacaoHoje?.items?.[colab.id]?.feito || 0;
+    const meta = colab.metaDiaria || 0;
+    const pct = meta > 0 ? Math.min(100, Math.round((feito / meta) * 100)) : 0;
+    const isDone = meta > 0 && feito >= meta;
+    return `
+      <div class="colab-card">
+        <div class="colab-head">
+          <span class="colab-name">${colab.name}</span>
+          <span class="colab-meta ${isDone ? "is-done" : ""}">${feito}/${meta || "—"}</span>
+        </div>
+        <div class="colab-progress-track"><div class="colab-progress-fill ${isDone ? "is-done" : ""}" style="width:${pct}%"></div></div>
+        <div class="colab-counter">
+          <button type="button" class="icon-btn btn-colab-minus" data-id="${colab.id}"><i data-lucide="minus"></i></button>
+          <span class="colab-count">${feito}</span>
+          <button type="button" class="icon-btn icon-btn-filled btn-colab-plus" data-id="${colab.id}"><i data-lucide="plus"></i></button>
+        </div>
+      </div>
+    `;
+  }).join("");
+  refreshIcons();
+  $all(".btn-colab-plus").forEach(btn => btn.addEventListener("click", () => changeColabFeito(btn.dataset.id, 1)));
+  $all(".btn-colab-minus").forEach(btn => btn.addEventListener("click", () => changeColabFeito(btn.dataset.id, -1)));
+}
+
+async function changeColabFeito(colabId, delta) {
+  if (!state.avaliacaoHoje.items) state.avaliacaoHoje.items = {};
+  const current = state.avaliacaoHoje.items[colabId]?.feito || 0;
+  const next = Math.max(0, current + delta);
+  state.avaliacaoHoje.items[colabId] = { feito: next };
+  renderAvaliacoes(); // resposta imediata na tela
+  try {
+    await store.setColaboradorFeito(colabId, next);
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao salvar. Tente de novo.");
+  }
+}
+
+/* -------------- Configurações · Colaboradores -------------- */
+async function openSettingsColaboradores() {
+  if (!requireDb()) return;
+  showScreen("screen-settings-colaboradores");
+  try {
+    await ensureColaboradoresLoaded();
+    renderSettingsColaboradores();
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao carregar colaboradores.");
+  }
+}
+
+function renderSettingsColaboradores() {
+  const list = $("#settings-colaboradores-list");
+  if (!state.colaboradores.length) {
+    list.innerHTML = `<div class="empty-state"><i data-lucide="user-check"></i><p>Nenhum colaborador cadastrado.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  list.innerHTML = state.colaboradores.map(c => `
+    <div class="settings-sector-card">
+      <div class="sector-status"><i data-lucide="user"></i></div>
+      <div class="sector-body">
+        <p class="sector-name">${c.name}</p>
+        <label class="colab-meta-field">
+          Meta diária
+          <input type="number" class="colab-meta-input" data-id="${c.id}" value="${c.metaDiaria || 0}" min="0" />
+        </label>
+      </div>
+      <button class="icon-btn btn-delete-colab" data-id="${c.id}"><i data-lucide="trash-2"></i></button>
+    </div>
+  `).join("");
+  refreshIcons();
+
+  $all(".colab-meta-input").forEach(input => {
+    input.addEventListener("blur", async () => {
+      const id = input.dataset.id;
+      const val = Math.max(0, Number(input.value) || 0);
+      input.value = val;
+      const colab = state.colaboradores.find(x => x.id === id);
+      if (colab && colab.metaDiaria === val) return;
+      try {
+        await store.updateColaboradorMeta(id, val);
+        if (colab) colab.metaDiaria = val;
+        showToast("Meta atualizada.");
+      } catch (e) {
+        console.error(e);
+        showToast("Erro ao salvar meta.");
+      }
+    });
+  });
+
+  $all(".btn-delete-colab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const colab = state.colaboradores.find(x => x.id === id);
+      openConfirm("Remover colaborador", `"${colab?.name}" será removido. Isso não apaga avaliações já registradas.`, async () => {
+        showLoading(true);
+        try {
+          await store.deleteColaborador(id);
+          await loadColaboradores();
+          renderSettingsColaboradores();
+          showToast("Colaborador removido.");
+        } catch (e) {
+          console.error(e);
+          showToast("Erro ao remover colaborador.");
+        } finally {
+          showLoading(false);
+        }
+      }, { confirmLabel: "Remover", danger: true });
+    });
+  });
+}
+
+async function addColaboradorFlow() {
+  const nameInput = $("#input-new-colab-name");
+  const metaInput = $("#input-new-colab-meta");
+  const name = nameInput.value.trim();
+  if (!name) { showToast("Digite o nome do colaborador."); return; }
+  const meta = Math.max(0, Number(metaInput.value) || 0);
+
+  showLoading(true);
+  try {
+    await store.addColaborador(name, meta);
+    nameInput.value = "";
+    metaInput.value = "";
+    await loadColaboradores();
+    renderSettingsColaboradores();
+    showToast("Colaborador adicionado.");
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao adicionar colaborador.");
+  } finally {
+    showLoading(false);
+  }
+}
+
 async function addSectorFlow() {
   const input = $("#input-new-sector");
   const name = input.value.trim();
@@ -1502,6 +1682,8 @@ function wireEvents() {
 
   $("#btn-start-daily").addEventListener("click", () => openChecklistFlow("daily"));
   $("#btn-start-weekly").addEventListener("click", () => openChecklistFlow("weekly"));
+  $("#btn-avaliacoes").addEventListener("click", openAvaliacoes);
+  $("#btn-goto-colaboradores").addEventListener("click", openSettingsColaboradores);
   $("#btn-history").addEventListener("click", () => {
     state.historyRange = "all";
     $all("#history-filter-chips .filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.range === "all"));
@@ -1597,6 +1779,9 @@ function wireEvents() {
 
   // configurações
   $("#btn-add-sector").addEventListener("click", addSectorFlow);
+  $("#btn-open-colaboradores").addEventListener("click", openSettingsColaboradores);
+  $("#btn-add-colaborador").addEventListener("click", addColaboradorFlow);
+  $("#input-new-colab-name").addEventListener("keydown", e => { if (e.key === "Enter") addColaboradorFlow(); });
   $("#btn-toggle-reorder").addEventListener("click", toggleReorderMode);
   $("#settings-responsavel-filter").addEventListener("click", (e) => {
     const chip = e.target.closest(".filter-chip");
