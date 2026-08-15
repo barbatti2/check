@@ -445,7 +445,7 @@ function renderSectorQuestions() {
   const list = $("#question-list");
   list.innerHTML = "";
   questions.forEach((q, idx) => {
-    const ans = sd.answers[q.id] || { status: null, observation: "" };
+    const ans = sd.answers[q.id] || { status: null };
     const pend = (state.currentRonda.pendencias || []).find(p => p.questionId === q.id && p.sectorId === sector.id);
 
     const card = document.createElement("div");
@@ -461,9 +461,6 @@ function renderSectorQuestions() {
           <i data-lucide="circle-check"></i><span>Atingiu</span>
         </button>
       </div>
-      <div class="obs-field">
-        <textarea rows="2" placeholder="Observação (opcional)" data-q="${q.id}">${ans.observation || ""}</textarea>
-      </div>
       <div class="pendencia-row">
         <button type="button" class="btn-pendencia ${pend ? "has-pendencia" : ""}" data-q="${q.id}">
           <i data-lucide="flag"></i>
@@ -478,14 +475,6 @@ function renderSectorQuestions() {
   list.querySelectorAll(".answer-btn").forEach(btn => {
     btn.addEventListener("click", () => setAnswer(btn.dataset.q, btn.dataset.status));
   });
-  list.querySelectorAll(".obs-field textarea").forEach(ta => {
-    ta.addEventListener("input", () => {
-      const qid = ta.dataset.q;
-      sd.answers[qid] = sd.answers[qid] || { status: null, observation: "" };
-      sd.answers[qid].observation = ta.value;
-      debounce("sector-" + sector.id, () => store.saveRondaSector(state.currentRonda.id, sector.id, sd), 600);
-    });
-  });
   list.querySelectorAll(".btn-pendencia").forEach(btn => {
     btn.addEventListener("click", () => openPendenciaModal(sector, questions.find(q => q.id === btn.dataset.q)));
   });
@@ -498,11 +487,7 @@ function setAnswer(questionId, status) {
   const sector = state.sectors.find(s => s.id === state.activeSectorId);
   const sd = state.currentRonda.sectorsData[sector.id];
   const question = getRondaSectorQuestions(sector, sd, state.checklistType).find(q => q.id === questionId);
-  sd.answers[questionId] = {
-    text: question.text,
-    status,
-    observation: (sd.answers[questionId] && sd.answers[questionId].observation) || ""
-  };
+  sd.answers[questionId] = { text: question.text, status };
   store.saveRondaSector(state.currentRonda.id, sector.id, sd).catch(console.error);
   renderSectorQuestions();
 }
@@ -867,6 +852,7 @@ function renderSummary(ronda, opts = {}) {
           <span class="pendencia-sector">${p.sectorName}</span>
           ${priorityBadgeHtml(p.prioridade)}
         </div>
+        ${p.questionText ? `<p class="pendencia-question">${p.questionText}</p>` : ""}
         <p class="pendencia-desc">${p.descricao}</p>
         <div class="pendencia-meta">
           <span><i data-lucide="user"></i>${p.responsavel || "—"}</span>
@@ -1083,6 +1069,7 @@ function openHistoryDetail(ronda) {
     card.className = "pendencia-card" + (p.resolvida ? " is-resolved" : "");
     card.innerHTML = `
       <div class="pendencia-head"><span class="pendencia-sector">${p.sectorName}</span>${priorityBadgeHtml(p.prioridade)}</div>
+      ${p.questionText ? `<p class="pendencia-question">${p.questionText}</p>` : ""}
       <p class="pendencia-desc">${p.descricao}</p>
       <div class="pendencia-meta"><span><i data-lucide="user"></i>${p.responsavel || "—"}</span><span><i data-lucide="calendar"></i>${p.prazo || "sem prazo"}</span></div>
       <button type="button" class="btn-resolve ${p.resolvida ? "is-resolved" : ""}" data-id="${p.id}">
