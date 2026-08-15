@@ -226,14 +226,41 @@
   <header class="topbar">
     <button class="icon-btn" data-nav="screen-home"><i data-lucide="chevron-left"></i></button>
     <div class="topbar-title">
-      <h2>Avaliações</h2>
+      <h2>Avaliações de hoje</h2>
       <p id="avaliacoes-date-label" class="topbar-sub"></p>
     </div>
-    <button class="icon-btn" id="btn-goto-colaboradores"><i data-lucide="settings-2"></i></button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btn-avaliacoes-historico"><i data-lucide="history"></i></button>
+      <button class="icon-btn" id="btn-goto-colaboradores"><i data-lucide="settings-2"></i></button>
+    </div>
   </header>
 
   <section class="section-block">
     <div id="avaliacoes-list" class="card-list"></div>
+  </section>
+
+  <section class="section-block hidden" id="avaliacoes-finish-bar">
+    <button id="btn-finish-avaliacoes" class="btn btn-primary btn-lg" style="width:100%;">
+      <i data-lucide="check"></i>
+      <span>Concluir avaliações de hoje</span>
+    </button>
+  </section>
+</main>
+
+<!-- ============ HISTÓRICO DE AVALIAÇÕES ============ -->
+<main id="screen-avaliacoes-historico" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="screen-avaliacoes"><i data-lucide="chevron-left"></i></button>
+    <div class="topbar-title"><h2>Histórico de Avaliações</h2><p class="topbar-sub">Separado dos checklists</p></div>
+    <span class="topbar-spacer"></span>
+  </header>
+
+  <section class="section-block">
+    <div class="empty-state hidden" id="avaliacoes-historico-empty">
+      <i data-lucide="inbox"></i>
+      <p>Nenhuma avaliação concluída ainda.</p>
+    </div>
+    <div id="avaliacoes-historico-list" class="card-list"></div>
   </section>
 </main>
 
