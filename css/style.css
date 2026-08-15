@@ -692,8 +692,20 @@ input,textarea{ font-family:inherit; }
 }
 .colab-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .colab-name{ font-family: var(--font-display); font-weight:600; font-size:16px; color: var(--ink); }
-.colab-meta{ font-family: var(--font-mono); font-size:12.5px; color: var(--ink-muted); font-weight:600; }
-.colab-meta.is-done{ color: var(--ok-vivid); }
+.colab-card.is-done{ border-color: var(--ok-vivid); background: var(--ok-soft); }
+.colab-meta-edit{
+  display:inline-flex; align-items:center; gap:6px; background: var(--surface-2); border:none;
+  font-family: var(--font-mono); font-size:12.5px; color: var(--ink-muted); font-weight:600;
+  padding:5px 10px; border-radius: var(--radius-pill); cursor:pointer;
+}
+.colab-meta-edit svg{ width:12px; height:12px; opacity:.6; }
+.colab-meta-edit.is-done{ background: var(--ok-vivid); color:#fff; }
+.colab-meta-edit.is-done svg{ opacity:.85; }
+.colab-meta-input-inline{
+  width:90px; border:1px solid var(--accent); border-radius: var(--radius-pill); padding:5px 12px;
+  font-family: var(--font-mono); font-size:12.5px; color: var(--ink); text-align:center;
+}
+.colab-meta-input-inline:focus{ outline:none; }
 .colab-progress-track{
   height:6px; border-radius: var(--radius-pill); background: var(--surface-2); margin-top:10px; overflow:hidden;
 }
