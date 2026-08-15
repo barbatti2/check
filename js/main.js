@@ -1853,41 +1853,142 @@ function wireEvents() {
 }
 
 /* ============================================================
-   Gesto de voltar (arrastar da borda esquerda), estilo iOS
+   Gesto de voltar (arrastar da borda esquerda), estilo iOS —
+   a tela atual segue o dedo e "sai", revelando a tela anterior
+   por trás, com um véu escurecendo que clareia conforme arrasta.
 ============================================================ */
+const EDGE_ZONE = 24;      // faixa sensível a partir da borda esquerda da tela
+const COMMIT_RATIO = 0.32; // % da largura da tela pra considerar "voltar" ao soltar
+
+let swipeCtx = null;
+
 function initEdgeSwipeBack() {
-  const EDGE_ZONE = 24;   // faixa sensível a partir da borda esquerda da tela
-  const THRESHOLD = 70;   // distância mínima de arrasto para considerar "voltar"
-  let startX = null, startY = null, tracking = false;
-
-  document.addEventListener("touchstart", (e) => {
-    const t = e.touches[0];
-    tracking = t.clientX <= EDGE_ZONE;
-    startX = t.clientX;
-    startY = t.clientY;
-  }, { passive: true });
-
-  document.addEventListener("touchend", (e) => {
-    if (!tracking || startX === null) { tracking = false; return; }
-    const t = e.changedTouches[0];
-    const dx = t.clientX - startX;
-    const dy = Math.abs(t.clientY - startY);
-    tracking = false;
-    if (dx > THRESHOLD && dy < 60) triggerBackGesture();
-  }, { passive: true });
+  document.addEventListener("touchstart", onSwipeStart, { passive: true });
+  document.addEventListener("touchmove", onSwipeMove, { passive: false });
+  document.addEventListener("touchend", onSwipeEnd, { passive: true });
+  document.addEventListener("touchcancel", onSwipeEnd, { passive: true });
 }
 
-function triggerBackGesture() {
-  // Se houver um modal aberto, o gesto fecha ele primeiro.
+function resolveBackTarget() {
+  // Se houver um modal aberto, o "alvo" do gesto é só fechar ele.
   const openModal = document.querySelector(".modal-overlay:not(.hidden)");
-  if (openModal) {
-    openModal.classList.add("hidden");
-    return;
-  }
-  // Caso contrário, aciona o mesmo botão de voltar do topo da tela atual.
+  if (openModal) return { modal: openModal };
+
   const activeScreen = document.querySelector(".screen.is-active");
   const backBtn = activeScreen && activeScreen.querySelector(".topbar [data-nav]");
-  if (backBtn) backBtn.click();
+  if (!activeScreen || !backBtn) return null;
+  const targetId = backBtn.dataset.nav;
+  const targetScreen = document.getElementById(targetId);
+  if (!targetScreen || targetScreen === activeScreen) return null;
+  return { activeScreen, targetScreen, backBtn };
+}
+
+function onSwipeStart(e) {
+  const t = e.touches[0];
+  if (t.clientX > EDGE_ZONE) { swipeCtx = null; return; }
+
+  const target = resolveBackTarget();
+  if (!target) { swipeCtx = null; return; }
+
+  swipeCtx = { startX: t.clientX, startY: t.clientY, dx: 0, width: window.innerWidth, ...target };
+
+  if (target.modal) return; // modais fecham só no touchend, sem drag visual
+
+  // Prepara a tela de trás (revelada) já visível, levemente deslocada e
+  // escurecida por um véu — exatamente como o iOS mostra antes de soltar.
+  const { targetScreen, activeScreen } = target;
+  targetScreen.classList.add("is-active", "swipe-underneath");
+  targetScreen.style.transform = `translateX(${-swipeCtx.width * 0.28}px)`;
+  activeScreen.classList.add("swipe-dragging");
+  activeScreen.style.transform = "translateX(0px)";
+  $("#swipe-scrim").style.opacity = "0.18";
+  $("#swipe-scrim").classList.remove("hidden");
+}
+
+function onSwipeMove(e) {
+  if (!swipeCtx) return;
+  const t = e.touches[0];
+  const dx = Math.max(0, t.clientX - swipeCtx.startX);
+
+  if (swipeCtx.modal) {
+    // Fechamento de modal por arrasto: só precisa acompanhar a distância,
+    // sem o efeito visual de tela saindo.
+    swipeCtx.dx = dx;
+    return;
+  }
+
+  const dy = Math.abs(t.clientY - swipeCtx.startY);
+  if (dy > 60 && dx < 20) { onSwipeCancelGesture(); return; } // gesto vertical: não é isso
+
+  swipeCtx.dx = dx;
+  e.preventDefault();
+
+  const progress = Math.min(1, dx / swipeCtx.width);
+  swipeCtx.activeScreen.style.transform = `translateX(${dx}px)`;
+  swipeCtx.targetScreen.style.transform = `translateX(${-swipeCtx.width * 0.28 * (1 - progress)}px)`;
+  $("#swipe-scrim").style.opacity = String(0.18 * (1 - progress));
+}
+
+function onSwipeCancelGesture() {
+  if (!swipeCtx || swipeCtx.modal) { swipeCtx = null; return; }
+  settleSwipe(false);
+  swipeCtx = null;
+}
+
+function onSwipeEnd() {
+  if (!swipeCtx) return;
+
+  if (swipeCtx.modal) {
+    if (swipeCtx.dx > 40) swipeCtx.modal.classList.add("hidden");
+    swipeCtx = null;
+    return;
+  }
+
+  const committed = swipeCtx.dx > swipeCtx.width * COMMIT_RATIO;
+  settleSwipe(committed);
+  swipeCtx = null;
+}
+
+function settleSwipe(committed) {
+  const { activeScreen, targetScreen, backBtn, width } = swipeCtx;
+  activeScreen.classList.add("swipe-animate");
+  targetScreen.classList.add("swipe-animate");
+
+  if (committed) {
+    activeScreen.style.transform = `translateX(${width}px)`;
+    targetScreen.style.transform = "translateX(0px)";
+    $("#swipe-scrim").style.opacity = "0";
+  } else {
+    activeScreen.style.transform = "translateX(0px)";
+    targetScreen.style.transform = `translateX(${-width * 0.28}px)`;
+    $("#swipe-scrim").style.opacity = "0.18";
+  }
+
+  const cleanup = () => {
+    activeScreen.classList.remove("swipe-animate", "swipe-dragging");
+    targetScreen.classList.remove("swipe-animate", "swipe-underneath");
+    activeScreen.style.transform = "";
+    targetScreen.style.transform = "";
+    $("#swipe-scrim").classList.add("hidden");
+    $("#swipe-scrim").style.opacity = "0";
+
+    if (committed) {
+      // Aciona o botão de voltar de verdade: ele cuida de resetar estado,
+      // decidir a tela final (ex: histórico em vez de home) etc. A troca
+      // visual real já aconteceu; isso só garante que a lógica da tela
+      // fique consistente com uma navegação normal.
+      backBtn.click();
+    } else {
+      targetScreen.classList.remove("is-active");
+    }
+  };
+  // Se não houve deslocamento real (ex: só um toque na borda), o navegador
+  // pode não disparar "transitionend" — o timeout garante a limpeza mesmo
+  // assim, sem depender só do evento.
+  let done = false;
+  const runOnce = () => { if (done) return; done = true; cleanup(); };
+  activeScreen.addEventListener("transitionend", runOnce, { once: true });
+  setTimeout(runOnce, 300);
 }
 
 /* ============================================================
