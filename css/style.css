@@ -1,6 +1,6 @@
 /* ============================================================
    RONDA — design tokens
-   Palette: Slate Ocean (#2F4858) + Cloud Mint (#DDFBEF)
+   Palette: Royal Iris (#4C1D95) sobre fundo branco/creme
    Tema sempre claro — não segue o modo escuro do sistema, para
    manter a identidade visual consistente.
    Type: Fraunces (display, soft-serif) + Plus Jakarta Sans (body)
@@ -9,30 +9,30 @@
 :root{
   color-scheme: light;
 
-  --bg: #EAF6F1;
-  --surface: #DDFBEF;             /* Cloud Mint — nunca branco puro */
-  --surface-2: #CCEDE0;
-  --surface-sunken: #C1E4D5;
-  --ink: #1B2E33;
-  --ink-muted: #4C6169;
-  --ink-faint: #7C9198;
-  --line: #BFE0D2;
-  --line-soft: #D3EFE3;
+  --bg: #F5F1EA;
+  --surface: #FFFFFF;
+  --surface-2: #F6F2EA;
+  --surface-sunken: #EDE7DC;
+  --ink: #201A2E;
+  --ink-muted: #6B6577;
+  --ink-faint: #9C96A5;
+  --line: #E7E1D6;
+  --line-soft: #EFEADF;
 
-  --accent: #2F4858;             /* Slate Ocean */
-  --accent-strong: #1F323D;
-  --accent-contrast: #DDFBEF;   /* Cloud Mint — texto/ícones sobre superfícies accent */
-  --accent-soft: #D7E4E7;
-  --accent-soft-2: #C3D5D9;
-  --accent-shadow: rgba(47,72,88,0.35);
+  --accent: #4C1D95;             /* Royal Iris */
+  --accent-strong: #3A1573;
+  --accent-contrast: #FBF7EF;   /* branco/creme — texto/ícones sobre superfícies accent */
+  --accent-soft: #EBE1F7;
+  --accent-soft-2: #D9C6F0;
+  --accent-shadow: rgba(76,29,149,0.32);
 
-  --ok: #2F6E56;
-  --ok-soft: #D6EEE1;
+  --ok: #33604F;
+  --ok-soft: #E1EAE3;
   --ok-vivid: #0F9D58;
   --bad: #B14B3E;
   --bad-soft: #F6E4E0;
-  --warn: #A9762A;
-  --warn-soft: #F1E6CE;
+  --warn: #B07F27;
+  --warn-soft: #F4EBD8;
 
   --radius-xl: 28px;
   --radius-lg: 22px;
@@ -40,9 +40,9 @@
   --radius-sm: 12px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgba(27,46,51,0.08), 0 1px 1px rgba(27,46,51,0.05);
-  --shadow-md: 0 10px 24px rgba(27,46,51,0.10), 0 2px 6px rgba(27,46,51,0.06);
-  --shadow-lg: 0 20px 48px rgba(27,46,51,0.16), 0 6px 16px rgba(27,46,51,0.08);
+  --shadow-sm: 0 1px 2px rgba(32,26,46,0.06), 0 1px 1px rgba(32,26,46,0.04);
+  --shadow-md: 0 10px 24px rgba(32,26,46,0.08), 0 2px 6px rgba(32,26,46,0.05);
+  --shadow-lg: 0 20px 48px rgba(32,26,46,0.14), 0 6px 16px rgba(32,26,46,0.07);
   --shadow-inset: inset 0 1px 2px rgba(27,28,25,0.06), inset 0 -1px 1px rgba(255,255,255,0.6);
 
   --ease: cubic-bezier(.22,.9,.32,1);
@@ -158,6 +158,7 @@ input,textarea{ font-family:inherit; }
 .topbar-title h2{ font-size:17px; }
 .topbar-sub{ margin:2px 0 0; font-size:12.5px; color:var(--ink-muted); font-family:var(--font-mono); }
 .topbar-spacer{ width:40px; }
+.topbar-actions{ display:flex; gap:8px; }
 
 /* ---------------- Buttons ---------------- */
 .btn{
@@ -261,7 +262,7 @@ input,textarea{ font-family:inherit; }
 }
 .home-title-underline{
   display:block; width:30px; height:3px; margin:10px 0 0;
-  border-radius: 3px; background: rgba(221,251,239,0.45);
+  border-radius: 3px; background: rgba(251,247,239,0.45);
 }
 
 /* --- tira de setores --- */
@@ -324,10 +325,10 @@ input,textarea{ font-family:inherit; }
 .menu-card--primary{
   background: var(--accent); box-shadow: 0 10px 22px -10px var(--accent-shadow);
 }
-.menu-card--primary .menu-card-icon{ background: rgba(221,251,239,0.14); color: var(--accent-contrast); }
+.menu-card--primary .menu-card-icon{ background: rgba(251,247,239,0.14); color: var(--accent-contrast); }
 .menu-card--primary .menu-card-title{ color: var(--accent-contrast); }
-.menu-card--primary .menu-card-sub{ color: rgba(221,251,239,0.75); }
-.menu-card--primary .menu-card-chevron{ color: rgba(221,251,239,0.75); }
+.menu-card--primary .menu-card-sub{ color: rgba(251,247,239,0.75); }
+.menu-card--primary .menu-card-chevron{ color: rgba(251,247,239,0.75); }
 
 
 .resume-card{
@@ -702,29 +703,29 @@ input,textarea{ font-family:inherit; }
 }
 .colab-meta-field input:focus{ outline:none; border-color: var(--accent); }
 
-/* Avaliações */
+/* Avaliações — cards compactos, tudo numa faixa só */
 .colab-card{
-  background: var(--surface); border-radius: var(--radius-lg);
-  padding: 16px 18px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
+  background: var(--surface); border-radius: var(--radius-md);
+  padding: 12px 14px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
 }
-.colab-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.colab-name{ font-family: var(--font-display); font-weight:600; font-size:16px; color: var(--ink); }
 .colab-card.is-done{ border-color: var(--ok-vivid); background: var(--ok-soft); }
+.colab-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.colab-name{ font-family: var(--font-display); font-weight:600; font-size:14px; color: var(--ink); }
 .colab-meta-edit{
-  display:inline-flex; align-items:center; gap:6px; background: var(--surface-2); border:none;
-  font-family: var(--font-mono); font-size:12.5px; color: var(--ink-muted); font-weight:600;
-  padding:5px 10px; border-radius: var(--radius-pill); cursor:pointer;
+  display:inline-flex; align-items:center; gap:5px; background: var(--surface-2); border:none;
+  font-family: var(--font-mono); font-size:11px; color: var(--ink-muted); font-weight:600;
+  padding:4px 8px; border-radius: var(--radius-pill); cursor:pointer;
 }
-.colab-meta-edit svg{ width:12px; height:12px; opacity:.6; }
+.colab-meta-edit svg{ width:11px; height:11px; opacity:.6; }
 .colab-meta-edit.is-done{ background: var(--ok-vivid); color:#fff; }
 .colab-meta-edit.is-done svg{ opacity:.85; }
 .colab-meta-input-inline{
-  width:90px; border:1px solid var(--accent); border-radius: var(--radius-pill); padding:5px 12px;
-  font-family: var(--font-mono); font-size:12.5px; color: var(--ink); text-align:center;
+  width:76px; border:1px solid var(--accent); border-radius: var(--radius-pill); padding:4px 10px;
+  font-family: var(--font-mono); font-size:11px; color: var(--ink); text-align:center;
 }
 .colab-meta-input-inline:focus{ outline:none; }
 .colab-progress-track{
-  height:6px; border-radius: var(--radius-pill); background: var(--surface-2); margin-top:10px; overflow:hidden;
+  height:4px; border-radius: var(--radius-pill); background: var(--surface-2); margin-top:8px; overflow:hidden;
 }
 .colab-progress-fill{
   height:100%; border-radius: var(--radius-pill); background: var(--accent-strong);
@@ -732,10 +733,18 @@ input,textarea{ font-family:inherit; }
 }
 .colab-progress-fill.is-done{ background: var(--ok-vivid); }
 .colab-counter{
-  display:flex; align-items:center; justify-content:center; gap:22px; margin-top:14px;
+  display:flex; align-items:center; justify-content:center; gap:14px; margin-top:8px;
 }
-.colab-counter .icon-btn{ width:44px; height:44px; }
-.colab-count{ font-family: var(--font-display); font-weight:700; font-size:22px; min-width:36px; text-align:center; color: var(--ink); }
+.colab-counter .icon-btn{ width:32px; height:32px; }
+.colab-counter .icon-btn svg{ width:15px; height:15px; }
+.colab-count{ font-family: var(--font-display); font-weight:700; font-size:16px; min-width:24px; text-align:center; color: var(--ink); }
+
+.loading-inline{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:24px 0; font-size:13px; color: var(--ink-muted);
+}
+.loading-inline svg{ width:16px; height:16px; animation: spin .8s linear infinite; }
+
 .settings-question-card .q-actions{ display:flex; gap:6px; flex-shrink:0; }
 .settings-question-card .q-actions .icon-btn{ width:32px; height:32px; }
 .settings-question-card .q-actions .icon-btn svg{ width:15px; height:15px; }
