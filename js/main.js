@@ -33,6 +33,7 @@ const state = {
   settingsResponsavelFilter: null,   // nome selecionado no filtro por responsável
   colaboradores: [],
   avaliacaoHoje: null,       // { id, date, items: { [colaboradorId]: { feito } } }
+  editingMetaColabId: null,  // id do colaborador cuja meta está sendo editada inline
   reorderMode: false,                // true = tela de setores em modo de reordenar
   draggingSectorId: null,            // setor sendo arrastado no momento (para renderizar como "fantasma")
   expandedSectorIds: new Set(),      // setores com o detalhe de atingiu/não atingiu aberto (na ronda)
@@ -1330,6 +1331,7 @@ async function ensureColaboradoresLoaded() {
 
 async function openAvaliacoes() {
   if (!requireDb()) return;
+  state.editingMetaColabId = null;
   showScreen("screen-avaliacoes");
   $("#avaliacoes-date-label").textContent = fmtDateLabel(new Date());
   try {
@@ -1338,7 +1340,7 @@ async function openAvaliacoes() {
     renderAvaliacoes();
   } catch (e) {
     console.error(e);
-    showToast("Erro ao carregar avaliações.");
+    showToast("Erro ao carregar avaliações. Verifique as regras do Firestore (coleções \"colaboradores\" e \"avaliacoes\").");
   }
 }
 
@@ -1363,11 +1365,19 @@ function renderAvaliacoes() {
     const meta = colab.metaDiaria || 0;
     const pct = meta > 0 ? Math.min(100, Math.round((feito / meta) * 100)) : 0;
     const isDone = meta > 0 && feito >= meta;
+    const isEditingMeta = state.editingMetaColabId === colab.id;
     return `
-      <div class="colab-card">
+      <div class="colab-card ${isDone ? "is-done" : ""}">
         <div class="colab-head">
           <span class="colab-name">${colab.name}</span>
-          <span class="colab-meta ${isDone ? "is-done" : ""}">${feito}/${meta || "—"}</span>
+          ${isEditingMeta ? `
+            <input type="number" min="0" class="colab-meta-input-inline" id="colab-meta-input-${colab.id}" data-id="${colab.id}" value="${meta || ""}" placeholder="Meta" />
+          ` : `
+            <button type="button" class="colab-meta-edit ${isDone ? "is-done" : ""}" data-id="${colab.id}">
+              <span class="colab-meta-feito">${feito}</span>/<span class="colab-meta-value">${meta || "definir meta"}</span>
+              <i data-lucide="pencil"></i>
+            </button>
+          `}
         </div>
         <div class="colab-progress-track"><div class="colab-progress-fill ${isDone ? "is-done" : ""}" style="width:${pct}%"></div></div>
         <div class="colab-counter">
@@ -1381,6 +1391,39 @@ function renderAvaliacoes() {
   refreshIcons();
   $all(".btn-colab-plus").forEach(btn => btn.addEventListener("click", () => changeColabFeito(btn.dataset.id, 1)));
   $all(".btn-colab-minus").forEach(btn => btn.addEventListener("click", () => changeColabFeito(btn.dataset.id, -1)));
+  $all(".colab-meta-edit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.editingMetaColabId = btn.dataset.id;
+      renderAvaliacoes();
+      const input = $(`#colab-meta-input-${btn.dataset.id}`);
+      input.focus();
+      input.select();
+    });
+  });
+  $all(".colab-meta-input-inline").forEach(input => {
+    input.addEventListener("blur", () => saveColabMetaInline(input.dataset.id, input.value));
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+      if (e.key === "Escape") { state.editingMetaColabId = null; renderAvaliacoes(); }
+    });
+  });
+}
+
+async function saveColabMetaInline(colabId, value) {
+  if (state.editingMetaColabId !== colabId) return; // já foi fechado (ex: Escape)
+  state.editingMetaColabId = null;
+  const meta = Math.max(0, Number(value) || 0);
+  const colab = state.colaboradores.find(c => c.id === colabId);
+  if (colab && colab.metaDiaria !== meta) {
+    try {
+      await store.updateColaboradorMeta(colabId, meta);
+      colab.metaDiaria = meta;
+    } catch (e) {
+      console.error(e);
+      showToast("Erro ao salvar meta. Verifique as regras do Firestore (coleção \"colaboradores\").");
+    }
+  }
+  renderAvaliacoes();
 }
 
 async function changeColabFeito(colabId, delta) {
@@ -1489,7 +1532,7 @@ async function addColaboradorFlow() {
     showToast("Colaborador adicionado.");
   } catch (e) {
     console.error(e);
-    showToast("Erro ao adicionar colaborador.");
+    showToast("Erro ao adicionar colaborador. Verifique as regras do Firestore (coleção \"colaboradores\").");
   } finally {
     showLoading(false);
   }
