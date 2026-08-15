@@ -1334,9 +1334,17 @@ async function openAvaliacoes() {
   state.editingMetaColabId = null;
   showScreen("screen-avaliacoes");
   $("#avaliacoes-date-label").textContent = fmtDateLabel(new Date());
+  $("#avaliacoes-list").innerHTML = `<div class="loading-inline"><i data-lucide="loader-2"></i>Carregando…</div>`;
+  refreshIcons();
   try {
-    await loadColaboradores(); // sempre recarrega — a meta pode ter mudado em Configurações
-    state.avaliacaoHoje = await store.getTodayAvaliacao();
+    // Busca colaboradores (só se ainda não tem em cache) e a avaliação de
+    // hoje em paralelo — antes eram duas idas sequenciais ao Firestore,
+    // o que deixava a tela demorando mais que o necessário pra abrir.
+    const [, avaliacaoHoje] = await Promise.all([
+      ensureColaboradoresLoaded(),
+      store.getTodayAvaliacao()
+    ]);
+    state.avaliacaoHoje = avaliacaoHoje;
     renderAvaliacoes();
   } catch (e) {
     console.error(e);
@@ -1346,6 +1354,13 @@ async function openAvaliacoes() {
 
 function renderAvaliacoes() {
   const list = $("#avaliacoes-list");
+  const isCompleted = state.avaliacaoHoje?.status === "completed";
+  $("#avaliacoes-finish-bar").classList.toggle("hidden", !state.colaboradores.length);
+  $("#btn-finish-avaliacoes").innerHTML = isCompleted
+    ? `<i data-lucide="check-circle-2"></i><span>Avaliação de hoje concluída</span>`
+    : `<i data-lucide="check"></i><span>Concluir avaliações de hoje</span>`;
+  $("#btn-finish-avaliacoes").classList.toggle("btn-secondary", isCompleted);
+  $("#btn-finish-avaliacoes").classList.toggle("btn-primary", !isCompleted);
 
   if (!state.colaboradores.length) {
     list.innerHTML = `
@@ -1374,7 +1389,7 @@ function renderAvaliacoes() {
             <input type="number" min="0" class="colab-meta-input-inline" id="colab-meta-input-${colab.id}" data-id="${colab.id}" value="${meta || ""}" placeholder="Meta" />
           ` : `
             <button type="button" class="colab-meta-edit ${isDone ? "is-done" : ""}" data-id="${colab.id}">
-              <span class="colab-meta-feito">${feito}</span>/<span class="colab-meta-value">${meta || "definir meta"}</span>
+              <span class="colab-meta-feito">${feito}</span>/<span class="colab-meta-value">${meta || "meta"}</span>
               <i data-lucide="pencil"></i>
             </button>
           `}
@@ -1438,6 +1453,79 @@ async function changeColabFeito(colabId, delta) {
     console.error(e);
     showToast("Erro ao salvar. Tente de novo.");
   }
+}
+
+function finishAvaliacoesFlow() {
+  if (state.avaliacaoHoje?.status === "completed") {
+    showToast("As avaliações de hoje já foram concluídas.");
+    return;
+  }
+  openConfirm(
+    "Concluir avaliações de hoje",
+    "Isso vai salvar a avaliação de hoje no histórico. Você ainda pode continuar somando depois, se precisar.",
+    async () => {
+      showLoading(true);
+      try {
+        await store.finishAvaliacaoHoje();
+        state.avaliacaoHoje.status = "completed";
+        renderAvaliacoes();
+        showToast("Avaliações de hoje concluídas.");
+      } catch (e) {
+        console.error(e);
+        showToast("Erro ao concluir. Verifique as regras do Firestore.");
+      } finally {
+        showLoading(false);
+      }
+    },
+    { confirmLabel: "Concluir" }
+  );
+}
+
+/* -------------- Histórico de Avaliações (separado do checklist) -------------- */
+async function openAvaliacoesHistorico() {
+  if (!requireDb()) return;
+  showScreen("screen-avaliacoes-historico");
+  $("#avaliacoes-historico-list").innerHTML = `<div class="loading-inline"><i data-lucide="loader-2"></i>Carregando…</div>`;
+  refreshIcons();
+  try {
+    const [, items] = await Promise.all([ensureColaboradoresLoaded(), store.getAvaliacoesHistory()]);
+    renderAvaliacoesHistorico(items);
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao carregar o histórico de avaliações.");
+  }
+}
+
+function renderAvaliacoesHistorico(items) {
+  const list = $("#avaliacoes-historico-list");
+  $("#avaliacoes-historico-empty").classList.toggle("hidden", items.length > 0);
+  if (!items.length) { list.innerHTML = ""; return; }
+
+  const nameById = Object.fromEntries(state.colaboradores.map(c => [c.id, c.name]));
+
+  list.innerHTML = items.map(av => {
+    const entries = Object.entries(av.items || {});
+    const totalFeito = entries.reduce((sum, [, v]) => sum + (v.feito || 0), 0);
+    const metasBatidas = entries.filter(([id, v]) => {
+      const meta = state.colaboradores.find(c => c.id === id)?.metaDiaria || 0;
+      return meta > 0 && (v.feito || 0) >= meta;
+    }).length;
+    return `
+      <div class="history-card avaliacao-history-card">
+        <div class="history-score">${totalFeito}</div>
+        <div class="history-body">
+          <p class="history-date">${fmtDateLabelFromKey(av.date)}</p>
+          <p class="history-sub">${entries.length} colaborador${entries.length === 1 ? "" : "es"} · ${metasBatidas} bateu${metasBatidas === 1 ? "" : "ram"} a meta</p>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function fmtDateLabelFromKey(dateKey) {
+  if (!dateKey) return "";
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
 }
 
 /* -------------- Configurações · Colaboradores -------------- */
@@ -1727,6 +1815,8 @@ function wireEvents() {
   $("#btn-start-weekly").addEventListener("click", () => openChecklistFlow("weekly"));
   $("#btn-avaliacoes").addEventListener("click", openAvaliacoes);
   $("#btn-goto-colaboradores").addEventListener("click", openSettingsColaboradores);
+  $("#btn-avaliacoes-historico").addEventListener("click", openAvaliacoesHistorico);
+  $("#btn-finish-avaliacoes").addEventListener("click", finishAvaliacoesFlow);
   $("#btn-history").addEventListener("click", () => {
     state.historyRange = "all";
     $all("#history-filter-chips .filter-chip").forEach(c => c.classList.toggle("is-selected", c.dataset.range === "all"));

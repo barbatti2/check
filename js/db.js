@@ -301,8 +301,8 @@ function todayDateKey() {
 export async function getTodayAvaliacao() {
   const key = todayDateKey();
   const snap = await getDoc(doc(db, "avaliacoes", key));
-  if (!snap.exists()) return { id: key, date: key, items: {} };
-  return { id: key, ...snap.data() };
+  if (!snap.exists()) return { id: key, date: key, items: {}, status: "in_progress" };
+  return { id: key, status: "in_progress", ...snap.data() };
 }
 
 export async function setColaboradorFeito(colaboradorId, feito) {
@@ -312,6 +312,26 @@ export async function setColaboradorFeito(colaboradorId, feito) {
   // do mapa "items", sem sobrescrever os outros já salvos no mesmo dia.
   await setDoc(ref, {
     date: key,
+    status: "in_progress",
     [`items.${colaboradorId}.feito`]: Math.max(0, feito)
   }, { merge: true });
+}
+
+export async function finishAvaliacaoHoje() {
+  const key = todayDateKey();
+  const ref = doc(db, "avaliacoes", key);
+  await setDoc(ref, {
+    date: key,
+    status: "completed",
+    finishedAt: serverTimestamp()
+  }, { merge: true });
+}
+
+// Histórico das avaliações finalizadas — separado do histórico de checklists.
+export async function getAvaliacoesHistory() {
+  const q = query(collection(db, "avaliacoes"), where("status", "==", "completed"));
+  const snap = await getDocs(q);
+  const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  items.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  return items;
 }
