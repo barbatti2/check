@@ -1105,18 +1105,71 @@ function openHistoryDetail(ronda) {
   $("#modal-history-detail").classList.remove("hidden");
 }
 
+// Recalcula conformes/não conformes/pontuação de uma ronda a partir das
+// respostas atuais em sectorsData — usado sempre que uma resposta muda
+// fora do fluxo normal de responder perguntas (ex: ao resolver pendência).
+function recomputeRondaScore(ronda) {
+  let conform = 0, nonConform = 0;
+  Object.values(ronda.sectorsData || {}).forEach(sd => {
+    Object.values(sd.answers || {}).forEach(a => {
+      if (a.status === "ok") conform++;
+      else if (a.status === "not_ok") nonConform++;
+    });
+  });
+  const total = conform + nonConform;
+  ronda.conformCount = conform;
+  ronda.nonConformCount = nonConform;
+  ronda.score = total ? Math.round((conform / total) * 100) : 0;
+}
+
 async function toggleResolvePendencia(ronda, pendId) {
+  const willResolve = !ronda.pendencias.find(p => p.id === pendId)?.resolvida;
   const pendencias = (ronda.pendencias || []).map(p =>
     p.id === pendId ? { ...p, resolvida: !p.resolvida, resolvedAt: !p.resolvida ? Date.now() : null } : p
   );
   ronda.pendencias = pendencias;
+
+  // Resolver a pendência corrige automaticamente a resposta da pergunta
+  // que a gerou pra "Atingiu" (e reabrir volta pra "Não atingiu", já que
+  // o problema voltou a existir) — mantém o checklist coerente com o que
+  // foi realmente resolvido.
+  const pend = pendencias.find(p => p.id === pendId);
+  const sd = pend && ronda.sectorsData && ronda.sectorsData[pend.sectorId];
+  const answer = sd && sd.answers && sd.answers[pend.questionId];
+  let sectorChanged = false;
+  if (answer) {
+    const newStatus = willResolve ? "ok" : "not_ok";
+    if (answer.status !== newStatus) {
+      answer.status = newStatus;
+      sectorChanged = true;
+    }
+  }
+
   showLoading(true);
   try {
     await store.saveRondaPendencias(ronda.id, pendencias);
+    if (sectorChanged) {
+      await store.saveRondaSector(ronda.id, pend.sectorId, sd);
+      recomputeRondaScore(ronda);
+      await store.updateRondaTotals(ronda.id, {
+        score: ronda.score, conformCount: ronda.conformCount, nonConformCount: ronda.nonConformCount
+      });
+    }
     const idx = state.historyItems.findIndex(r => r.id === ronda.id);
-    if (idx >= 0) state.historyItems[idx].pendencias = pendencias;
+    if (idx >= 0) {
+      state.historyItems[idx].pendencias = pendencias;
+      if (sectorChanged) {
+        state.historyItems[idx].sectorsData = ronda.sectorsData;
+        state.historyItems[idx].score = ronda.score;
+        state.historyItems[idx].conformCount = ronda.conformCount;
+        state.historyItems[idx].nonConformCount = ronda.nonConformCount;
+      }
+    }
     renderHistory();
     openHistoryDetail(ronda);
+    if (sectorChanged) {
+      showToast(willResolve ? "Pendência resolvida — resposta atualizada para \"Atingiu\"." : "Pendência reaberta — resposta voltou para \"Não atingiu\".");
+    }
   } catch (e) {
     console.error(e);
     showToast("Erro ao atualizar pendência.");

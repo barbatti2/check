@@ -206,6 +206,10 @@ export async function saveRondaPendencias(rondaId, pendencias) {
   await updateDoc(doc(db, "rondas", rondaId), { pendencias });
 }
 
+export async function updateRondaTotals(rondaId, { score, conformCount, nonConformCount }) {
+  await updateDoc(doc(db, "rondas", rondaId), { score, conformCount, nonConformCount });
+}
+
 export async function finishRonda(rondaId, { score, conformCount, nonConformCount }, opts = {}) {
   const payload = { status: "completed", score, conformCount, nonConformCount };
   // Na primeira finalização grava finishedAt; em edições posteriores do
