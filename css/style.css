@@ -1,6 +1,6 @@
 /* ============================================================
    RONDA — design tokens
-   Palette: Digital Lilac (#D9B8FF) + Chrome Black (#0D0D0D)
+   Palette: Slate Ocean (#2F4858) + Cloud Mint (#DDFBEF)
    Tema sempre claro — não segue o modo escuro do sistema, para
    manter a identidade visual consistente.
    Type: Fraunces (display, soft-serif) + Plus Jakarta Sans (body)
@@ -9,30 +9,30 @@
 :root{
   color-scheme: light;
 
-  --bg: #F1F1EE;
-  --surface: #FFFFFF;
-  --surface-2: #F7F7F4;
-  --surface-sunken: #ECECE8;
-  --ink: #0D0D0D;
-  --ink-muted: #6E6F68;
-  --ink-faint: #9B9C94;
-  --line: #E4E3DD;
-  --line-soft: #ECEBE5;
+  --bg: #EAF6F1;
+  --surface: #DDFBEF;             /* Cloud Mint — nunca branco puro */
+  --surface-2: #CCEDE0;
+  --surface-sunken: #C1E4D5;
+  --ink: #1B2E33;
+  --ink-muted: #4C6169;
+  --ink-faint: #7C9198;
+  --line: #BFE0D2;
+  --line-soft: #D3EFE3;
 
-  --accent: #D9B8FF;             /* Digital Lilac */
-  --accent-strong: #B98CFF;
-  --accent-contrast: #0D0D0D;   /* Chrome Black — texto/ícones sobre superfícies accent */
-  --accent-soft: #F1E6FF;
-  --accent-soft-2: #E4D0FA;
-  --accent-shadow: rgba(157,110,255,0.32);
+  --accent: #2F4858;             /* Slate Ocean */
+  --accent-strong: #1F323D;
+  --accent-contrast: #DDFBEF;   /* Cloud Mint — texto/ícones sobre superfícies accent */
+  --accent-soft: #D7E4E7;
+  --accent-soft-2: #C3D5D9;
+  --accent-shadow: rgba(47,72,88,0.35);
 
-  --ok: #33604F;
-  --ok-soft: #E1EAE3;
+  --ok: #2F6E56;
+  --ok-soft: #D6EEE1;
   --ok-vivid: #0F9D58;
   --bad: #B14B3E;
   --bad-soft: #F6E4E0;
-  --warn: #B07F27;
-  --warn-soft: #F4EBD8;
+  --warn: #A9762A;
+  --warn-soft: #F1E6CE;
 
   --radius-xl: 28px;
   --radius-lg: 22px;
@@ -40,9 +40,9 @@
   --radius-sm: 12px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgba(27,28,25,0.05), 0 1px 1px rgba(27,28,25,0.03);
-  --shadow-md: 0 10px 24px rgba(27,28,25,0.07), 0 2px 6px rgba(27,28,25,0.04);
-  --shadow-lg: 0 20px 48px rgba(27,28,25,0.12), 0 6px 16px rgba(27,28,25,0.06);
+  --shadow-sm: 0 1px 2px rgba(27,46,51,0.08), 0 1px 1px rgba(27,46,51,0.05);
+  --shadow-md: 0 10px 24px rgba(27,46,51,0.10), 0 2px 6px rgba(27,46,51,0.06);
+  --shadow-lg: 0 20px 48px rgba(27,46,51,0.16), 0 6px 16px rgba(27,46,51,0.08);
   --shadow-inset: inset 0 1px 2px rgba(27,28,25,0.06), inset 0 -1px 1px rgba(255,255,255,0.6);
 
   --ease: cubic-bezier(.22,.9,.32,1);
@@ -126,6 +126,23 @@ input,textarea{ font-family:inherit; }
   .screen.is-active{ animation:none; }
   *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* Gesto de voltar arrastando da borda (estilo iOS): durante o arrasto, as
+   duas telas envolvidas viram camadas fixas sobrepostas — a atual segue o
+   dedo por cima, a anterior fica revelada por baixo com um véu escuro que
+   clareia conforme se arrasta mais pra direita. */
+#swipe-scrim{
+  position:fixed; inset:0; z-index:39; background:#000; opacity:0;
+  pointer-events:none; transition:none;
+}
+.screen.swipe-underneath{
+  position:fixed !important; inset:0; z-index:38; animation:none !important; will-change:transform;
+}
+.screen.swipe-dragging{
+  position:fixed !important; inset:0; z-index:40; animation:none !important; will-change:transform;
+  box-shadow: -10px 0 34px rgba(0,0,0,0.28);
+}
+.screen.swipe-animate{ transition: transform 260ms cubic-bezier(.22,.61,.36,1) !important; }
 
 .section-block{ padding: 8px 20px 22px; }
 
@@ -244,7 +261,7 @@ input,textarea{ font-family:inherit; }
 }
 .home-title-underline{
   display:block; width:30px; height:3px; margin:10px 0 0;
-  border-radius: 3px; background: rgba(13,13,13,0.35);
+  border-radius: 3px; background: rgba(221,251,239,0.45);
 }
 
 /* --- tira de setores --- */
@@ -307,10 +324,10 @@ input,textarea{ font-family:inherit; }
 .menu-card--primary{
   background: var(--accent); box-shadow: 0 10px 22px -10px var(--accent-shadow);
 }
-.menu-card--primary .menu-card-icon{ background: rgba(13,13,13,0.08); color: var(--accent-contrast); }
+.menu-card--primary .menu-card-icon{ background: rgba(221,251,239,0.14); color: var(--accent-contrast); }
 .menu-card--primary .menu-card-title{ color: var(--accent-contrast); }
-.menu-card--primary .menu-card-sub{ color: rgba(13,13,13,0.65); }
-.menu-card--primary .menu-card-chevron{ color: rgba(13,13,13,0.65); }
+.menu-card--primary .menu-card-sub{ color: rgba(221,251,239,0.75); }
+.menu-card--primary .menu-card-chevron{ color: rgba(221,251,239,0.75); }
 
 
 .resume-card{
