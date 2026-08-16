@@ -1165,6 +1165,23 @@ async function toggleResolvePendencia(ronda, pendId) {
         state.historyItems[idx].nonConformCount = ronda.nonConformCount;
       }
     }
+
+    // Se esse mesmo checklist também estiver aberto em outra tela (ex: você
+    // estava editando ele antes de ir pro Histórico), sincroniza os dados
+    // lá também — sem isso, a tela antiga ficava com uma cópia desatualizada
+    // e parecia que a pendência resolvida não tinha atualizado nada.
+    if (state.currentRonda && state.currentRonda.id === ronda.id && state.currentRonda !== ronda) {
+      state.currentRonda.pendencias = pendencias;
+      if (sectorChanged) {
+        state.currentRonda.sectorsData = ronda.sectorsData;
+        state.currentRonda.score = ronda.score;
+        state.currentRonda.conformCount = ronda.conformCount;
+        state.currentRonda.nonConformCount = ronda.nonConformCount;
+      }
+      if ($("#screen-ronda-sectors").classList.contains("is-active")) renderRondaSectors();
+      if ($("#screen-summary").classList.contains("is-active")) renderSummary(state.currentRonda);
+    }
+
     renderHistory();
     openHistoryDetail(ronda);
     if (sectorChanged) {
