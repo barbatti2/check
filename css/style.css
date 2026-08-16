@@ -516,19 +516,20 @@ input,textarea{ font-family:inherit; }
 
 .pendencia-card{
   background: var(--surface); border-radius: var(--radius-lg);
-  padding: 14px 16px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
+  padding: 16px 18px; box-shadow: var(--shadow-sm); border:1px solid var(--line-soft);
+  text-align:center;
 }
-.pendencia-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
-.pendencia-sector{ font-family: var(--font-mono); font-size:11px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; }
+.pendencia-head{ display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:8px; }
+.pendencia-sector{ font-family: var(--font-mono); font-size:14px; color: var(--ink-muted); text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
 .priority-badge{
   font-size:11px; font-weight:700; padding:3px 9px; border-radius: var(--radius-pill);
 }
 .priority-badge.Baixa{ background: var(--ok-soft); color: var(--ok); }
 .priority-badge.Média{ background: var(--warn-soft); color: var(--warn); }
 .priority-badge.Alta{ background: var(--bad-soft); color: var(--bad); }
-.pendencia-desc{ margin: 4px 0 8px; font-size:14px; font-weight:500; white-space: pre-line; }
-.pendencia-question{ margin:4px 0 0; font-size:12.5px; color: var(--accent); font-weight:600; }
-.pendencia-meta{ display:flex; gap:14px; font-size:12px; color:var(--ink-muted); }
+.pendencia-desc{ margin: 2px 0 10px; font-size:14px; font-weight:500; white-space: pre-line; }
+.pendencia-question{ margin:0 0 8px; font-size:15.5px; color: var(--accent); font-weight:700; }
+.pendencia-meta{ display:flex; justify-content:center; gap:14px; font-size:12px; color:var(--ink-muted); }
 .pendencia-meta span{ display:inline-flex; align-items:center; gap:5px; }
 .pendencia-meta svg{ width:13px; height:13px; }
 
