@@ -1023,8 +1023,57 @@ function deleteHistoryRondaFlow(ronda) {
   );
 }
 
+// Corrige a resposta de uma pergunta direto pelo Histórico (sem precisar
+// que exista uma pendência): alterna Atingiu ↔ Não atingiu, recalcula a
+// pontuação e sincroniza com outras telas que possam estar com esse
+// checklist aberto.
+async function toggleHistoryAnswer(ronda, sectorId, questionId) {
+  const sd = ronda.sectorsData && ronda.sectorsData[sectorId];
+  const answer = sd && sd.answers && sd.answers[questionId];
+  if (!answer) return;
+
+  answer.status = answer.status === "ok" ? "not_ok" : "ok";
+  recomputeRondaScore(ronda);
+
+  showLoading(true);
+  try {
+    await store.saveRondaSector(ronda.id, sectorId, sd);
+    await store.updateRondaTotals(ronda.id, {
+      score: ronda.score, conformCount: ronda.conformCount, nonConformCount: ronda.nonConformCount
+    });
+
+    const idx = state.historyItems.findIndex(r => r.id === ronda.id);
+    if (idx >= 0) {
+      state.historyItems[idx].sectorsData = ronda.sectorsData;
+      state.historyItems[idx].score = ronda.score;
+      state.historyItems[idx].conformCount = ronda.conformCount;
+      state.historyItems[idx].nonConformCount = ronda.nonConformCount;
+    }
+    if (state.currentRonda && state.currentRonda.id === ronda.id && state.currentRonda !== ronda) {
+      state.currentRonda.sectorsData = ronda.sectorsData;
+      state.currentRonda.score = ronda.score;
+      state.currentRonda.conformCount = ronda.conformCount;
+      state.currentRonda.nonConformCount = ronda.nonConformCount;
+      if ($("#screen-ronda-sectors").classList.contains("is-active")) renderRondaSectors();
+      if ($("#screen-summary").classList.contains("is-active")) renderSummary(state.currentRonda);
+    }
+
+    renderHistory();
+    openHistoryDetail(ronda);
+    showToast(answer.status === "ok" ? "Marcado como Atingiu." : "Marcado como Não atingiu.");
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao atualizar a resposta.");
+  } finally {
+    showLoading(false);
+  }
+}
+
 function historySectorsHtml(ronda) {
-  const entries = Object.entries(ronda.sectorsData || {});
+  // Só mostra setores que realmente tinham pergunta cadastrada para esse
+  // tipo de checklist (diário/semanal) — setores "vazios" (sem pergunta
+  // daquele tipo) não fazem parte de verdade desse checklist específico.
+  const entries = Object.entries(ronda.sectorsData || {}).filter(([, sd]) => (sd.totalQuestions ?? 0) > 0);
   if (!entries.length) return "";
   return entries.map(([sectorId, sd]) => {
     const answers = Object.values(sd.answers || {});
@@ -1050,15 +1099,16 @@ function historySectorsHtml(ronda) {
         </div>
         ${isExpanded ? `
           <div class="sector-card-expand">
-            ${answers.map(a => {
+            <p class="sector-expand-hint">Toque numa pergunta pra corrigir a resposta</p>
+            ${Object.entries(sd.answers || {}).map(([questionId, a]) => {
               const cls = a.status === "ok" ? "is-ok" : a.status === "not_ok" ? "is-bad" : "is-pending";
               const label = a.status === "ok" ? "Atingiu" : a.status === "not_ok" ? "Não atingiu" : "Sem resposta";
               return `
-                <div class="sector-expand-row ${cls}">
+                <button type="button" class="sector-expand-row hist-answer-toggle ${cls}" data-sector="${sectorId}" data-question="${questionId}">
                   <i data-lucide="${a.status === "ok" ? "check-circle-2" : a.status === "not_ok" ? "x-circle" : "circle"}"></i>
                   <span class="sector-expand-text">${a.text || ""}</span>
                   <span class="sector-expand-label">${label}</span>
-                </div>
+                </button>
               `;
             }).join("")}
           </div>
@@ -1118,6 +1168,9 @@ function openHistoryDetail(ronda) {
       else state.expandedHistorySectorIds.add(id);
       openHistoryDetail(ronda);
     });
+  });
+  body.querySelectorAll(".hist-answer-toggle").forEach(btn => {
+    btn.addEventListener("click", () => toggleHistoryAnswer(ronda, btn.dataset.sector, btn.dataset.question));
   });
   const aiBtn = body.querySelector("#hist-btn-generate-ai-summary");
   if (aiBtn) {
