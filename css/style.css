@@ -440,10 +440,18 @@ input,textarea{ font-family:inherit; }
 .sector-expand-row.is-ok svg{ color: var(--ok-vivid); }
 .sector-expand-row.is-bad svg{ color: var(--bad); }
 .sector-expand-row.is-pending svg{ color: var(--ink-faint); }
-.sector-expand-text{ flex:1; color: var(--ink); }
+.sector-expand-text{ flex:1; color: var(--ink); text-align:left; }
 .sector-expand-label{ flex-shrink:0; font-weight:700; font-size:11.5px; color: var(--ink-muted); }
 .sector-expand-row.is-ok .sector-expand-label{ color: var(--ok-vivid); }
 .sector-expand-row.is-bad .sector-expand-label{ color: var(--bad); }
+
+/* Linha de resposta clicável (edição direta pelo Histórico) */
+.sector-expand-hint{ margin:0 0 4px; font-size:11px; color: var(--ink-faint); font-style:italic; }
+.hist-answer-toggle{
+  width:100%; cursor:pointer; border-radius: var(--radius-sm); padding:6px 8px; margin:-6px -8px;
+  transition: background var(--dur-fast) var(--ease);
+}
+.hist-answer-toggle:active{ background: var(--surface-2); }
 
 .finish-bar{
   position:fixed; left:0; right:0; bottom:0; z-index:6;
