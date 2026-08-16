@@ -37,6 +37,8 @@ const state = {
   reorderMode: false,                // true = tela de setores em modo de reordenar
   draggingSectorId: null,            // setor sendo arrastado no momento (para renderizar como "fantasma")
   expandedSectorIds: new Set(),      // setores com o detalhe de atingiu/não atingiu aberto (na ronda)
+  expandedHistorySectorIds: new Set(), // idem, mas no detalhe do histórico
+  historyDetailRondaId: null,
   editingQuestionId: null,
   pendenciaCtx: null,      // { sectorId, questionId, questionText, editingId }
   pendenciaItems: [],      // itens/produtos adicionados na pendência atualmente aberta
@@ -1021,10 +1023,64 @@ function deleteHistoryRondaFlow(ronda) {
   );
 }
 
+function historySectorsHtml(ronda) {
+  const entries = Object.entries(ronda.sectorsData || {});
+  if (!entries.length) return "";
+  return entries.map(([sectorId, sd]) => {
+    const answers = Object.values(sd.answers || {});
+    const total = sd.totalQuestions ?? answers.length;
+    const okCount = answers.filter(a => a.status === "ok").length;
+    const notOkCount = answers.filter(a => a.status === "not_ok").length;
+    const isExpanded = state.expandedHistorySectorIds.has(sectorId);
+    return `
+      <div class="sector-card">
+        <div class="sector-card-main" style="cursor:default;">
+          <div class="sector-status"><i data-lucide="${sd.completed ? "circle-check" : "circle"}"></i></div>
+          <div class="sector-body">
+            <p class="sector-name">${sd.name}</p>
+            <p class="sector-meta">${sd.completed ? "Setor concluído" : `${answers.length}/${total} perguntas`}</p>
+            ${answers.length ? `
+              <button type="button" class="sector-stats-toggle hist-sector-toggle ${isExpanded ? "is-expanded" : ""}" data-sector="${sectorId}">
+                <span class="stat-ok"><i data-lucide="check-circle-2"></i>${okCount} atingiu</span>
+                <span class="stat-bad"><i data-lucide="x-circle"></i>${notOkCount} não atingiu</span>
+                <i data-lucide="chevron-down" class="stats-caret"></i>
+              </button>
+            ` : ""}
+          </div>
+        </div>
+        ${isExpanded ? `
+          <div class="sector-card-expand">
+            ${answers.map(a => {
+              const cls = a.status === "ok" ? "is-ok" : a.status === "not_ok" ? "is-bad" : "is-pending";
+              const label = a.status === "ok" ? "Atingiu" : a.status === "not_ok" ? "Não atingiu" : "Sem resposta";
+              return `
+                <div class="sector-expand-row ${cls}">
+                  <i data-lucide="${a.status === "ok" ? "check-circle-2" : a.status === "not_ok" ? "x-circle" : "circle"}"></i>
+                  <span class="sector-expand-text">${a.text || ""}</span>
+                  <span class="sector-expand-label">${label}</span>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
 function openHistoryDetail(ronda) {
   $("#history-detail-title").textContent = fmtDateLabel(ronda.startedAt);
   $("#history-detail-type-tag").innerHTML = historyTypeTagHtml(ronda);
   refreshIcons();
+
+  // Só reseta os setores expandidos quando é um checklist diferente do
+  // que já estava aberto — assim, resolver uma pendência não fecha tudo
+  // que você já tinha aberto pra conferir.
+  if (state.historyDetailRondaId !== ronda.id) {
+    state.expandedHistorySectorIds.clear();
+    state.historyDetailRondaId = ronda.id;
+  }
+
   const body = $("#history-detail-body");
   body.innerHTML = `
     <div class="score-card" style="margin-bottom:14px;">
@@ -1042,6 +1098,8 @@ function openHistoryDetail(ronda) {
       </div>
     </div>
     <div class="hist-status-row">${historyBadgesHtml(ronda)}</div>
+    <div class="section-header" style="padding:14px 2px 10px;"><h3>Setores</h3></div>
+    <div class="card-list" id="hist-sectors-list">${historySectorsHtml(ronda)}</div>
     ${(ronda.pendencias || []).length ? `
       <section class="section-block" id="hist-ai-summary-block">
         <button id="hist-btn-generate-ai-summary" class="btn btn-ghost btn-ai-summary">
@@ -1053,6 +1111,14 @@ function openHistoryDetail(ronda) {
     <div class="section-header" style="padding:14px 2px 10px;"><h3>Pendências</h3></div>
     <div class="card-list" id="hist-pend-list"></div>
   `;
+  body.querySelectorAll(".hist-sector-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.sector;
+      if (state.expandedHistorySectorIds.has(id)) state.expandedHistorySectorIds.delete(id);
+      else state.expandedHistorySectorIds.add(id);
+      openHistoryDetail(ronda);
+    });
+  });
   const aiBtn = body.querySelector("#hist-btn-generate-ai-summary");
   if (aiBtn) {
     aiBtn.addEventListener("click", () => {
